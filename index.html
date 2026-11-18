@@ -36,14 +36,15 @@
         <summary>📖 Nasıl oynanır?</summary>
         <ul>
           <li>2 ile 10 kişi. Boş yerleri botlar doldurabilir.</li>
-          <li>🎲 <b>Eşya seçimi:</b> Her turda herkes zar atar. Ortaya oyuncu sayısı kadar eşya çıkar. En büyük zarı atan ilk seçer, sonra sırayla diğerleri. Eşit atanlar sadece kendi aralarında yeniden atar.</li>
-          <li>⏱️ Seçim süreli! Süre biterse kalanların <b>en kötüsü</b> sana verilir. Herkesin faresi ekranda görünür.</li>
+          <li>🎲 <b>Eşya seçimi:</b> Herkes masanın başında durur. Her turda <b>ZARINI AT</b> düğmesine (ya da Boşluk) basıp zarını önüne atarsın. Süre içinde atmazsan kendiliğinden atılır.</li>
+          <li>Herkes atınca eşyalar masaya çıkar. En büyük zarı atan ilk seçer, sonra sırayla diğerleri. Eşit atanlar sadece kendi aralarında yeniden atar.</li>
+          <li>⏱️ Seçim süreli! Süre biterse kalanların <b>en kötüsü</b> sana verilir. Herkesin faresi masada görünür. Fareyle sürükleyip masanın etrafında dönebilirsin.</li>
           <li>👕 Yuvalar: kafa, gövde, bacak, ayak, silah, kalkan. Aynı yuvadan yeni eşya alırsan eskisi gider. Kıyafeti olmayan donla, çıplak dövüşür ve canı az olur.</li>
           <li>⚔️ <b>Arena:</b> Herkes aynı anda dövüşür. Her yere seriş <b>+1</b>, ayakta kalan son kişi <b>+2</b> puan alır. Hedef puana ilk ulaşan kazanır.</li>
           <li>🔴 Bir süre sonra alan daralır. Kırmızı alanın dışında kalan can kaybeder, herkes ortaya gelmek zorunda!</li>
           <li>✨ Yerdeki güçlendirmeler: 🔮 mana (güçlü vuruş), 🧪 hız iksiri, ❤️ can iksiri, 🫧 koruma balonu.</li>
-          <li>Bilgisayar: WASD yürü, fareyle nişan al, sol tık vur, sağ tık (ya da Shift) kalkan. K mikrofon.</li>
-          <li>Telefon: soldaki çubukla yürü, ⚔️ ile vur (en yakın rakibe döner), 🛡️ basılı tutunca kalkan.</li>
+          <li>Bilgisayar: arenada ekrana tıkla, fareyle etrafa bak. WASD yürü, sol tık vur, sağ tık (ya da Shift) kalkan. Alt fareyi bırakır. K mikrofon.</li>
+          <li>Telefon: soldaki çubukla yürü, sağda parmağını kaydırıp bak, ⚔️ ile vur (önündeki rakibe döner), 🛡️ basılı tutunca kalkan.</li>
           <li>Her arenadan sonra eşyalar sıfırlanır, yeni zarlar atılır.</li>
         </ul>
       </details>
@@ -82,17 +83,21 @@
     </div>
   </section>
 
-  <!-- Eşya seçimi -->
+  <!-- Eşya seçimi (3D masa) -->
   <section id="draft" class="gizli">
     <div id="draftUst">
       <div id="draftBaslik">🎲 Eşya seçimi</div>
       <div id="draftDurum"></div>
-      <div id="draftSure"><div id="draftSureDolu"></div></div>
+      <div id="draftSure"><div id="draftSureDolu"></div><span id="draftSureYazi"></span></div>
     </div>
-    <div id="zarlar"></div>
-    <div id="tahtaKutu"><div id="tahta"></div><div id="imlecler"></div></div>
+    <div id="siraPanel"></div>
+    <div id="esyaBilgi" class="gizli"></div>
+    <div id="draftBanner"></div>
+    <button id="zarAtBtn" class="gizli">🎲 ZARINI AT!<small>Boşluk tuşu</small></button>
     <div id="kusamim"></div>
+    <div id="kameraIpucu"><span>🖱️ Sürükle: etrafında dön · Tekerlek: yakınlaş</span> <button id="kameraSifirBtn" class="kucuk">🎥 Sıfırla</button></div>
   </section>
+  <div id="imlecler"></div>
 
   <!-- Arena ekranı -->
   <div id="hud" class="gizli">
@@ -109,7 +114,11 @@
     </div>
     <div id="akis"></div>
     <div id="buyukYazi"></div>
-    <div id="izleYazi" class="gizli">💀 Yere serildin. Turun bitmesini izliyorsun…</div>
+    <div id="nisan"></div>
+    <div id="hasarFlas"></div>
+    <div id="silahYazi"></div>
+    <div id="ipucu" class="serbest"></div>
+    <div id="izleYazi" class="gizli"></div>
     <div id="joystick" class="dokunmatik"><div id="joyTopuz"></div></div>
     <button id="vurBtn" class="dokunmatik">⚔️</button>
     <button id="kalkanBtn" class="dokunmatik">🛡️</button>
@@ -142,6 +151,7 @@
   <script src="esyalar.js"></script>
   <script src="motor.js"></script>
   <script src="insan.js"></script>
+  <script src="masa.js"></script>
   <script src="sahne.js"></script>
   <script src="ag.js"></script>
   <script src="ses.js"></script>

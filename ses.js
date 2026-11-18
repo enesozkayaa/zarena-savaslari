@@ -30,6 +30,7 @@ const Ses = (() => {
     baslat, degistir, get acik() { return acik; },
     zar() { for (let i = 0; i < 6; i++) gurultu(0.05, 0.25, 2500 + Math.random() * 1500, 'bandpass', i * 0.07, 4); ton(900, 0.05, 'square', 0.04, null, 0.45); },
     zarDus() { gurultu(0.08, 0.35, 1800, 'bandpass', 0, 3); ton(520, 0.08, 'triangle', 0.15); },
+    cik() { ton(520, 0.12, 'sine', 0.12, 880); gurultu(0.15, 0.08, 3000, 'highpass'); },
     sec() { ton(660, 0.08, 'triangle', 0.2); ton(990, 0.12, 'triangle', 0.18, null, 0.07); },
     kotuSec() { ton(300, 0.25, 'sawtooth', 0.12, 150); },
     sira() { ton(880, 0.1, 'sine', 0.25); ton(1320, 0.18, 'sine', 0.22, null, 0.1); },

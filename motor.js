@@ -8,7 +8,9 @@ const Motor = (() => {
   const E = (typeof Esya !== 'undefined') ? Esya : require('./esyalar.js');
   const ADIM = 0.05;                 // 20 kez / saniye
   const SECIM_SURE = 10;             // bir eşya seçmek için saniye
-  const ZAR_ASAMA = 1.6;             // zar animasyonu (her yeniden atış için)
+  const ZAR_SURE = 10;               // zarını atmak için saniye (atmayanınki kendiliğinden atılır)
+  const ZAR_GOSTER = 3.2;            // son zar düştükten sonra sıra gösterilir, sonra eşyalar çıkar
+  const ZAR_ESIT = 2.2;              // "eşit!" yazısı
   const GERI = 3;                    // arena geri sayımı
   const ALAN_BAS = 40, ALAN_SURE = 45, ALAN_MIN = 2.5;   // alan 40. saniyede daralmaya başlar, 45 saniyede küçülür
   const HIZ_TEMEL = 4.2, OYUNCU_R = 0.45, SUTUN_R = 0.9;
@@ -61,11 +63,45 @@ const Motor = (() => {
     }
     return { asamalar, sira: gruplar.flat() };
   }
+  // Zar: herkes kendi zarını atar (süre içinde). Eşit atanlar sadece kendi aralarında yeniden atar.
   function turBaslat() {
     const d = M.d;
-    const { asamalar, sira } = siralama(M.oyuncular.map(o => o.no));
-    Object.assign(d, { esyalar: d.turlar[d.tur], alinan: {}, asamalar, sira, siraIdx: 0, son: null });
-    M.faz = 'zar'; M.sayac = 0.4 + ZAR_ASAMA * asamalar.length + 0.8;
+    const hepsi = M.oyuncular.map(o => o.no);
+    Object.assign(d, { esyalar: d.turlar[d.tur], alinan: {}, asamalar: [{}], gruplar: [hepsi], bekleyen: hepsi.slice(), sira: null, siraIdx: 0, son: null, sonZar: null });
+    zarBekle();
+  }
+  function zarBekle() {
+    M.faz = 'zar'; M.sayac = ZAR_SURE;
+    M.d.bekleyen.forEach(no => { const p = M.oyuncular[no]; p.botZar = p.bot ? 0.6 + rnd() * 2.4 : null; });
+    draftYolla();
+  }
+  function zarAt(no) {
+    const d = M.d;
+    if (M.faz !== 'zar' || !d.bekleyen.includes(no)) return false;
+    const v = 1 + Math.floor(rnd() * 6), a = d.asamalar.length - 1;
+    d.asamalar[a][no] = v;
+    d.bekleyen = d.bekleyen.filter(x => x !== no);
+    d.sonZar = { no, v, a };
+    if (!d.bekleyen.length) asamaBitti();
+    else draftYolla();
+    return true;
+  }
+  function asamaBitti() {
+    const d = M.d, a = d.asamalar[d.asamalar.length - 1], yeni = [];
+    d.gruplar.forEach(g => {
+      if (g.length === 1) { yeni.push(g); return; }
+      [...new Set(g.map(no => a[no]))].sort((x, y) => y - x).forEach(v => yeni.push(g.filter(no => a[no] === v)));
+    });
+    d.gruplar = yeni;
+    if (yeni.every(g => g.length === 1)) {
+      d.sira = yeni.flat();
+      M.faz = 'zarBitti'; M.sayac = ZAR_GOSTER;       // zarlar biraz görünür, sonra eşyalar çıkar
+    } else {
+      d.esit = yeni.filter(g => g.length > 1).map(g => g.slice());
+      d.asamalar.push({});
+      d.bekleyen = yeni.filter(g => g.length > 1).flat();
+      M.faz = 'zarEsit'; M.sayac = ZAR_ESIT;
+    }
     draftYolla();
   }
   const kalanlar = () => M.d.esyalar.map((id, i) => i).filter(i => M.d.alinan[i] === undefined);
@@ -102,26 +138,33 @@ const Motor = (() => {
     const d = M.d;
     yolla({
       tip: 'draft', faz: M.faz, tur: d.tur, turSay: d.turlar.length, esyalar: d.esyalar, alinan: d.alinan, asamalar: d.asamalar, sira: d.sira,
+      bekleyen: d.bekleyen, sonZar: d.sonZar, esit: d.esit || null,
       siraIdx: d.siraIdx, sure: M.sayac, son: d.son, kusam: M.oyuncular.map(o => o.kusam), sonraki: M.sonraki || null, draftNo: M.draftNo,
     });
   }
-  // Eşya kartlarının tahtadaki yeri (imleçler için; oyun.js ile aynı yerleşim)
-  function kartYeri(i, n) {
+  // Eşyaların masadaki yeri (masa ortası 0,0; oyuncular -z tarafında, kamera +z tarafında)
+  function esyaYeri(i, n) {
     const sut = n <= 5 ? n : Math.ceil(n / 2), sat = Math.ceil(n / sut);
-    return { u: ((i % sut) + 0.5) / sut, v: (Math.floor(i / sut) + 0.5) / sat };
+    const r = Math.floor(i / sut), c = i % sut, buSat = r === sat - 1 ? n - sut * (sat - 1) : sut;
+    return { x: (c - (buSat - 1) / 2) * 1.3, z: sat === 1 ? 0.1 : (r === 0 ? -0.5 : 0.65) };
   }
   function draftAdim(dt) {
     M.sayac -= dt;
     const d = M.d;
-    if (M.faz === 'zar') { if (M.sayac <= 0) siradakiBasla(); }
+    if (M.faz === 'zar') {
+      d.bekleyen.slice().forEach(no => { const p = M.oyuncular[no]; if (p.botZar != null) { p.botZar -= dt; if (p.botZar <= 0) { p.botZar = null; zarAt(no); } } });
+      if (M.faz === 'zar' && M.sayac <= 0) d.bekleyen.slice().forEach(no => zarAt(no));   // süre bitti: kendiliğinden atılır
+    }
+    else if (M.faz === 'zarEsit') { if (M.sayac <= 0) zarBekle(); }
+    else if (M.faz === 'zarBitti') { if (M.sayac <= 0) siradakiBasla(); }
     else if (M.faz === 'secim') {
       const no = d.sira[d.siraIdx], p = M.oyuncular[no];
       if (p.botSec) {
         p.botSec.t -= dt;
         // botun imleci seçeceği karta doğru kayar
-        const h = kartYeri(p.botSec.i, d.esyalar.length);
-        p.imlec = p.imlec || { u: 0.5, v: 1.1 };
-        p.imlec.u += (h.u - p.imlec.u) * Math.min(1, dt * 6); p.imlec.v += (h.v - p.imlec.v) * Math.min(1, dt * 6); p.imlecT = M.t;
+        const h = esyaYeri(p.botSec.i, d.esyalar.length);
+        p.imlec = p.imlec || { x: 0, z: -1.6 };
+        p.imlec.x += (h.x - p.imlec.x) * Math.min(1, dt * 5); p.imlec.z += (h.z - p.imlec.z) * Math.min(1, dt * 5); p.imlecT = M.t;
         if (p.botSec.t <= 0) { sec(no, p.botSec.i, false); return; }
       }
       if (M.sayac <= 0) sec(no, kalanlar().reduce((a, i) => (E.al(d.esyalar[i]).p < E.al(d.esyalar[a]).p ? i : a)), true);
@@ -130,7 +173,7 @@ const Motor = (() => {
     }
     // İmleçleri gönder
     if (M.tick % 3 === 0) {
-      const l = M.oyuncular.filter(o => o.imlec && M.t - (o.imlecT || 0) < 6).map(o => [o.no, +o.imlec.u.toFixed(3), +o.imlec.v.toFixed(3)]);
+      const l = M.oyuncular.filter(o => o.imlec && M.t - (o.imlecT || 0) < 6).map(o => [o.no, +o.imlec.x.toFixed(2), +o.imlec.z.toFixed(2)]);
       if (l.length) yolla({ tip: 'im', l });
     }
   }
@@ -400,7 +443,8 @@ const Motor = (() => {
     if (!M) return;
     const p = M.oyuncular.find(o => o.id === id && !o.bot);
     if (!p) return;
-    if (m.tip === 'im') { p.imlec = { u: +m.u || 0, v: +m.v || 0 }; p.imlecT = M.t; return; }
+    if (m.tip === 'im') { p.imlec = { x: Math.max(-8, Math.min(8, +m.x || 0)), z: Math.max(-4, Math.min(4, +m.z || 0)) }; p.imlecT = M.t; return; }
+    if (m.tip === 'zarAt') { zarAt(p.no); return; }
     if (m.tip === 'sec') { sec(p.no, m.i | 0, false); return; }
     if (!M.arena || p.olu) return;
     if (m.tip === 'k') {
@@ -423,11 +467,12 @@ const Motor = (() => {
     p.bot = true; p.cikti = false; p.ad = p.ad + ' 🤖';
     yolla({ tip: 'cikti', no: p.no, ad: p.ad });
     if (M.faz === 'secim' && M.d.sira[M.d.siraIdx] === p.no) siradakiBasla();
+    if (M.faz === 'zar' && M.d.bekleyen.includes(p.no)) p.botZar = 0.5;
   }
 
   return {
-    baslat, durdur, adim, girdi, cikis, kartYeri, siralama: n => siralama(n), statlar: E.statlar,
-    SECIM_SURE, ZAR_ASAMA, ALAN_BAS, ALAN_SURE, HIZ_TEMEL, OYUNCU_R, GUC_SURE,
+    baslat, durdur, adim, girdi, cikis, esyaYeri, siralama: n => siralama(n), statlar: E.statlar,
+    SECIM_SURE, ZAR_SURE, ZAR_GOSTER, ALAN_BAS, ALAN_SURE, HIZ_TEMEL, OYUNCU_R, GUC_SURE,
     get M() { return M; }, rastgeleKoy(f) { rnd = f; },
   };
 })();
