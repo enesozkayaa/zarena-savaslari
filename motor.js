@@ -32,7 +32,14 @@ const Motor = (() => {
     };
     yolla({ tip: 'basla', oyuncular: M.oyuncular.map(o => ({ no: o.no, id: o.id, ad: o.ad, bot: o.bot, renk: o.renk, ten: o.ten })), ayar: M.ayar });
     draftBaslat();
-    if (!secenek.elle) sayac = setInterval(() => adim(ADIM), ADIM * 1000);
+    if (!secenek.elle) {
+      let son = Date.now(), birikim = 0;
+      sayac = setInterval(() => {
+        const simdi = Date.now(); birikim += Math.min(3, (simdi - son) / 1000); son = simdi;
+        let n = 0;
+        while (birikim >= ADIM && n++ < 80) { adim(ADIM); birikim -= ADIM; }
+      }, ADIM * 1000);
+    }
     return M;
   }
   function durdur() { if (sayac) clearInterval(sayac); sayac = null; M = null; }
@@ -68,7 +75,7 @@ const Motor = (() => {
   function turBaslat() {
     const d = M.d;
     const hepsi = M.oyuncular.map(o => o.no);
-    Object.assign(d, { esyalar: d.turlar[d.tur], alinan: {}, asamalar: [{}], gruplar: [hepsi], bekleyen: hepsi.slice(), sira: null, siraIdx: 0, son: null, sonZar: null });
+    Object.assign(d, { esyalar: d.turlar[d.tur], alinan: {}, asamalar: [{}], gruplar: [hepsi], bekleyen: hepsi.slice(), sira: null, siraIdx: 0, son: null, sonZar: null, esit: null });
     zarBekle();
   }
   function zarBekle() {
@@ -227,12 +234,14 @@ const Motor = (() => {
   function alanYaricap(t) {
     const R = M.arena.R;
     if (t < ALAN_BAS) return R;
+    const sonra = t - ALAN_BAS - ALAN_SURE - 20;    // en küçük hâlde 20 sn bekler, sonra tamamen kapanır
+    if (sonra > 0) return Math.max(0, ALAN_MIN - sonra * 0.25);
     return Math.max(ALAN_MIN, R - (R - ALAN_MIN) * Math.min(1, (t - ALAN_BAS) / ALAN_SURE));
   }
   const aci = (a, b) => { let d = (a - b) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return Math.abs(d); };
 
   function saldiri(p, yon) {
-    if (p.olu || p.cd > 0 || M.faz !== 'savas') return;
+    if (p.olu || p.cd > (p.bot ? 0 : 0.12) || M.faz !== 'savas') return;
     const s = p.st.silah, A = M.arena;
     p.yon = yon; p.cd = s.bekleme; p.sonSaldiri = A.t; p.blk = false;
     A.olaylar.push(['sv', p.no]);
@@ -467,25 +476,26 @@ const Motor = (() => {
 
   // Oyunculardan gelen mesajlar
   function girdi(id, m) {
-    if (!M) return;
+    if (!M || !m || typeof m !== 'object') return;
     const p = M.oyuncular.find(o => o.id === id && !o.bot);
     if (!p) return;
-    if (m.tip === 'im') { p.imlec = { x: Math.max(-8, Math.min(8, +m.x || 0)), z: Math.max(-4, Math.min(4, +m.z || 0)) }; p.imlecT = M.t; return; }
+    const sayi = v => (Number.isFinite(+v) ? +v : 0);
+    if (m.tip === 'im') { p.imlec = { x: Math.max(-8, Math.min(8, sayi(m.x))), z: Math.max(-4, Math.min(4, sayi(m.z))) }; p.imlecT = M.t; return; }
     if (m.tip === 'zarAt') { zarAt(p.no); return; }
     if (m.tip === 'karar') { if (!M.arena) karar(p, String(m.id), !!m.giy); return; }
-    if (m.tip === 'sec') { sec(p.no, m.i | 0, false); return; }
+    if (m.tip === 'sec') { sec(p.no, sayi(m.i) | 0, false); return; }
     if (!M.arena || p.olu) return;
     if (m.tip === 'k') {
       if (M.faz === 'savas') {
-        let x = +m.x || 0, z = +m.z || 0;
+        let x = sayi(m.x), z = sayi(m.z);
         const r = Math.hypot(x, z), sinir = M.arena.R - OYUNCU_R;
         if (r > sinir) { x *= sinir / r; z *= sinir / r; }
         p.x = x; p.z = z;
       }
-      p.yon = +m.y || 0; p.blk = !!m.b && M.faz === 'savas';
+      p.yon = sayi(m.y); p.blk = !!m.b && M.faz === 'savas';
       return;
     }
-    if (m.tip === 'vur') { saldiri(p, +m.y || 0); return; }
+    if (m.tip === 'vur') { saldiri(p, sayi(m.y)); return; }
   }
   // Oyuncu ayrıldı: yerine bot oynar
   function cikis(id) {

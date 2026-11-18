@@ -86,7 +86,7 @@ label { font-weight: 800; font-size: 14px; }
 .yuvaKutu.bos { opacity: .45; }
 .yuvaKutu b { font-size: 18px; }
 .statYazi { font-weight: 900; font-size: 14px; color: #ffd36a; }
-#kameraIpucu { position: absolute; right: max(10px, env(safe-area-inset-right)); bottom: calc(max(8px, env(safe-area-inset-bottom)) + 52px); color: #fff; font-size: 12px; font-weight: 800; background: #0008; border-radius: 10px; padding: 4px 6px 4px 10px; display: flex; gap: 6px; align-items: center; }
+#kameraIpucu { position: absolute; right: max(10px, env(safe-area-inset-right)); bottom: calc(max(8px, env(safe-area-inset-bottom)) + var(--altPay, 62px) - 8px); color: #fff; font-size: 12px; font-weight: 800; background: #0008; border-radius: 10px; padding: 4px 6px 4px 10px; display: flex; gap: 6px; align-items: center; }
 #kameraIpucu button { background: #fff2; color: #fff; box-shadow: none; }
 body.dokun #kameraIpucu span { display: none; }
 #imlecler { position: fixed; inset: 0; pointer-events: none; z-index: 14; }
@@ -152,16 +152,16 @@ body.dokun .dokunmatik { display: grid; }
 /* Dar ekran (telefon) */
 @media (max-width: 640px), (max-height: 480px) {
   #draftBaslik { font-size: 15px; } #draftDurum { font-size: 13px; }
-  #siraPanel { top: auto; bottom: calc(max(8px, env(safe-area-inset-bottom)) + 62px); transform: none; width: min(190px, 46vw); max-height: 32vh; }
+  #siraPanel { top: auto; bottom: calc(max(8px, env(safe-area-inset-bottom)) + var(--altPay, 62px)); transform: none; width: min(190px, 46vw); max-height: 32vh; }
   .spAd { font-size: 11px; } .spAlt { font-size: 10px; } .mzar { width: 17px; height: 17px; padding: 2px; }
-  #esyaBilgi { top: auto; bottom: calc(max(8px, env(safe-area-inset-bottom)) + 62px); transform: none; width: min(200px, 48vw); padding: 8px; }
+  #esyaBilgi { top: auto; bottom: calc(max(8px, env(safe-area-inset-bottom)) + var(--altPay, 62px)); transform: none; width: min(200px, 48vw); padding: 8px; }
   .ebEmo { font-size: 28px; } .ebAd { font-size: 14px; } #esyaBilgi ul { font-size: 12px; }
   #zarAtBtn { font-size: 22px; padding: 10px 20px; bottom: auto; top: calc(max(8px, env(safe-area-inset-top)) + 96px); }
   #kusamim { padding: 4px 6px; gap: 4px; }
   .yuvaKutu { font-size: 10px; padding: 2px 4px; } .yuvaKutu b { font-size: 13px; }
   .statYazi { font-size: 11px; }
   .imlec span { font-size: 10px; top: -13px; } .imlec svg { width: 16px; height: 16px; }
-  #kameraIpucu { top: auto; bottom: calc(max(8px, env(safe-area-inset-bottom)) + 62px); left: 50%; right: auto; transform: translateX(-50%); }
+  #kameraIpucu { bottom: auto; top: calc(max(8px, env(safe-area-inset-top)) + 64px); right: max(8px, env(safe-area-inset-right)); left: auto; transform: none; padding: 2px 4px; }
 }
 @media (max-width: 640px) {
   #ustOrta { left: auto; right: max(10px, env(safe-area-inset-right)); top: calc(max(10px, env(safe-area-inset-top)) + 46px); transform: none; text-align: right; }
@@ -206,3 +206,8 @@ body.dokun #ipucu { display: none; }
 .kkNot { margin-top: 8px; font-size: 12px; font-weight: 700; opacity: .8; text-align: center; }
 .spAlt i.dus { font-style: normal; color: #ffd36a; }
 @media (max-width: 640px) { .kkEmo { font-size: 26px; } .kkAd { font-size: 13px; } .kkKart ul { font-size: 10px; } #kararKutu { top: 44%; } }
+
+/* İnceleme düzeltmeleri: küçük ekranda üst üste binmeler */
+#kararKutu { max-height: calc(100% - 20px); overflow-y: auto; }
+@media (max-height: 480px) { #puanTablo { max-height: 38vh; overflow: hidden; font-size: 11px; } #akis { width: 40vw; } }
+@media (max-width: 640px) { #silahYazi { display: none; } }

@@ -28,10 +28,11 @@ const Masa = (() => {
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
     dokuCache.set(k, t); return t;
   }
+  const zarMat = new Map();
   function zarYap(renkHex) {
     const css = '#' + renkHex.toString(16).padStart(6, '0');
-    const mats = DEGER_YUZ.map(v => new THREE.MeshStandardMaterial({ map: yuzDoku(v, css), roughness: 0.4 }));
-    const m = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), mats);
+    if (!zarMat.has(css)) zarMat.set(css, DEGER_YUZ.map(v => { const m = new THREE.MeshStandardMaterial({ map: yuzDoku(v, css), roughness: 0.4 }); m.userData.paylasimli = true; m.map.userData.paylasimli = true; return m; }));
+    const m = new THREE.Mesh(Sahne.paylas('zarGeo', () => new THREE.BoxGeometry(0.3, 0.3, 0.3)), zarMat.get(css));
     m.castShadow = true;
     return m;
   }
@@ -77,17 +78,19 @@ const Masa = (() => {
     }
   }
   function temizle() {
-    if (grup) Sahne.scene.remove(grup);
-    zarlar.forEach(z => { Sahne.scene.remove(z.m); if (z.et) Sahne.scene.remove(z.et); }); zarlar.clear();
-    esyalar.forEach(e => Sahne.scene.remove(e.g)); esyalar = [];
+    Sahne.at(grup);
+    zarlar.forEach(z => { Sahne.at(z.m); Sahne.at(z.et); }); zarlar.clear();
+    esyalar.forEach(esyaAt); esyalar = [];
     grup = null;
   }
+  // masadaki eşyayı sil (insan.js'in paylaşımlı parçaları kalır)
+  function esyaAt(e) { Sahne.at(e.g); }
   const yer = no => yerler[no] || { x: 0, z: -2, yon: 0 };
   const masaKenar = () => ({ W, D, y: MASA_Y });
 
   // ---------- Zarlar ----------
   function zarAt(no, v, renk, hemen) {
-    const eski = zarlar.get(no); if (eski) { Sahne.scene.remove(eski.m); if (eski.et) Sahne.scene.remove(eski.et); }
+    const eski = zarlar.get(no); if (eski) { Sahne.at(eski.m); Sahne.at(eski.et); }
     const m = zarYap(renk); Sahne.scene.add(m);
     const p = yer(no);
     // oyuncunun önünde, masanın üstünde bir yer
@@ -113,7 +116,7 @@ const Masa = (() => {
   function siraGoster(sira) {
     sira.forEach((no, k) => {
       const z = zarlar.get(no); if (!z) return;
-      if (z.et) Sahne.scene.remove(z.et);
+      Sahne.at(z.et);
       z.et = Sahne.metinSprite(`${k + 1}.`, k === 0 ? '#ffd860' : '#fff', 0.26);
       z.et.position.copy(z.son).add(new THREE.Vector3(0, 0.38, 0)); Sahne.scene.add(z.et);
     });
@@ -121,16 +124,16 @@ const Masa = (() => {
 
   // ---------- Eşyalar ----------
   function esyalariCikar(idler, alinan, hemen) {
-    esyalar.forEach(e => Sahne.scene.remove(e.g)); esyalar = [];
+    esyalar.forEach(esyaAt); esyalar = [];
     idler.forEach((id, i) => {
       if (alinan && alinan[i] !== undefined) { esyalar.push({ g: new THREE.Group(), i, id, alindi: true, bitti: true }); return; }
       const x = Esya.al(id), y = Motor.esyaYeri(i, idler.length);
       const g = new THREE.Group(); g.position.set(y.x, MASA_Y, y.z);
       // Kaide: iyiliğine göre renkli halka (altın = efsane)
       const renk = x.p >= 8 ? 0xffc21a : x.p >= 5 ? 0x5aa8ff : x.p >= 3 ? 0xb8b8b8 : 0x8a6a4a;
-      const kaide = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.46, 0.06, 28), new THREE.MeshStandardMaterial({ color: 0x3a2414, roughness: 0.6 }));
+      const kaide = new THREE.Mesh(Sahne.paylas('kaideG', () => new THREE.CylinderGeometry(0.42, 0.46, 0.06, 28)), Sahne.paylas('kaideM', () => new THREE.MeshStandardMaterial({ color: 0x3a2414, roughness: 0.6 })));
       kaide.position.y = 0.03; kaide.receiveShadow = true; g.add(kaide);
-      const halka = new THREE.Mesh(new THREE.TorusGeometry(0.44, 0.025, 6, 32), new THREE.MeshStandardMaterial({ color: renk, emissive: renk, emissiveIntensity: x.p >= 8 ? 0.8 : 0.35, metalness: 0.5, roughness: 0.3 }));
+      const halka = new THREE.Mesh(Sahne.paylas('halkaG', () => new THREE.TorusGeometry(0.44, 0.025, 6, 32)), new THREE.MeshStandardMaterial({ color: renk, emissive: renk, emissiveIntensity: x.p >= 8 ? 0.8 : 0.35, metalness: 0.5, roughness: 0.3 }));
       halka.rotation.x = Math.PI / 2; halka.position.y = 0.06; g.add(halka);
       if (x.p >= 8) { const isik = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.4, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd860, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false })); isik.position.y = 0.75; g.add(isik); }
       const model = Insan.vitrin(id); model.position.y = 0.06; model.scale.multiplyScalar(1.35); g.add(model);
@@ -183,7 +186,7 @@ const Masa = (() => {
         z.kalkis += dt;
         z.m.scale.setScalar(Math.max(0.01, 1 - z.kalkis * 2.5)); z.m.position.y += dt * 0.6;
         if (z.et) z.et.visible = false;
-        if (z.kalkis > 0.4) { Sahne.scene.remove(z.m); if (z.et) Sahne.scene.remove(z.et); zarlar.delete(no); }
+        if (z.kalkis > 0.4) { Sahne.at(z.m); Sahne.at(z.et); zarlar.delete(no); }
         return;
       }
       if (z.t >= z.sure + 0.5) return;
@@ -212,7 +215,7 @@ const Masa = (() => {
         const k = Math.min(1, u.t / 0.75), s = k * k * (3 - 2 * k);
         e.g.position.lerpVectors(u.bas, u.son, s); e.g.position.y += Math.sin(k * Math.PI) * 1.2;
         e.g.scale.setScalar(1 - k * 0.6); e.g.rotation.y += dt * 9;
-        if (k >= 1) { e.bitti = true; Sahne.scene.remove(e.g); Sahne.partikul(u.son.x, u.son.y, u.son.z, 0xffd860, 14, 2.5); u.bitince && u.bitince(); }
+        if (k >= 1) { e.bitti = true; esyaAt(e); Sahne.partikul(u.son.x, u.son.y, u.son.z, 0xffd860, 14, 2.5); u.bitince && u.bitince(); }
         return;
       }
       e.t0 += dt;

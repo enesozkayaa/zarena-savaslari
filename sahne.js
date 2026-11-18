@@ -9,10 +9,13 @@ const Sahne = (() => {
   let arenaGrup = null, alanDuvar = null, alanZemin = null, alanR = -1, arenaR = 12;
   const kamHedef = new THREE.Vector3(0, 0, 0), kamPoz = new THREE.Vector3(0, 30, 20);
   let kamMod = 'draft', kamSarsinti = 0;
+  const paylasilan = new Map();
+  function paylas(k, f) { if (!paylasilan.has(k)) { const o = f(); o.userData = o.userData || {}; o.userData.paylasimli = true; paylasilan.set(k, o); } return paylasilan.get(k); }
 
   function kur(kanvas) {
     renderer = new THREE.WebGLRenderer({ canvas: kanvas, antialias: true });
-    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    const telefon = matchMedia('(pointer: coarse)').matches;
+    renderer.setPixelRatio(Math.min(telefon ? 1.5 : 2, window.devicePixelRatio || 1));
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     scene = new THREE.Scene();
@@ -35,7 +38,7 @@ const Sahne = (() => {
     scene.add(new THREE.HemisphereLight(0xdff0ff, 0x8a6a40, 0.9));
     isik = new THREE.DirectionalLight(0xfff2dd, 1.6);
     isik.position.set(14, 30, 10); isik.castShadow = true;
-    isik.shadow.mapSize.set(2048, 2048);
+    isik.shadow.mapSize.set(telefon ? 1024 : 2048, telefon ? 1024 : 2048);
     Object.assign(isik.shadow.camera, { left: -28, right: 28, top: 28, bottom: -28, near: 1, far: 80 });
     scene.add(isik);
     // Uzak zemin
@@ -49,6 +52,18 @@ const Sahne = (() => {
     renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
   }
 
+  // Sahneden çıkarılan nesnelerin GPU belleğini boşaltır (paylaşılan önbellekteki parçalar hariç)
+  function at(obj, haric) {
+    if (!obj) return;
+    obj.parent && obj.parent.remove(obj);
+    obj.traverse(o => {
+      if (haric && haric(o)) return;
+      if (o.userData?.paylasimli) return;
+      if (o.geometry && !o.geometry.userData?.paylasimli) o.geometry.dispose();
+      const ms = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
+      ms.forEach(m => { if (m.userData?.paylasimli) return; if (m.map && m.map !== kum && !m.map.userData?.paylasimli) m.map.dispose(); m.dispose(); });
+    });
+  }
   function kumDoku() {
     const c = document.createElement('canvas'); c.width = c.height = 256;
     const g = c.getContext('2d');
@@ -60,7 +75,7 @@ const Sahne = (() => {
   let kum = null;
   // ---------- Arena ----------
   function arenaKur(R, sutunlar) {
-    if (arenaGrup) scene.remove(arenaGrup);
+    at(arenaGrup);
     arenaR = R; alanR = -1;
     const g = new THREE.Group(); arenaGrup = g; scene.add(g);
     kum = kum || kumDoku();
@@ -83,13 +98,13 @@ const Sahne = (() => {
     for (let i = 0; i < kemerSay; i++) {
       const a = (i + 0.5) / kemerSay * Math.PI * 2, r = R + 0.88;
       const kg = new THREE.Group(); kg.position.set(Math.sin(a) * r, 0, Math.cos(a) * r); kg.rotation.y = a + Math.PI; g.add(kg);
-      const kapi = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.5), kM); kapi.position.y = 0.75; kg.add(kapi);
-      const ust = new THREE.Mesh(new THREE.CircleGeometry(0.65, 16, 0, Math.PI), kM); ust.position.y = 1.5; kg.add(ust);
-      const cerceve = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.14, 0.12), cM); cerceve.position.set(0, 2.35, 0.05); kg.add(cerceve);
+      const kapi = new THREE.Mesh(paylas('kemerKapi', () => new THREE.PlaneGeometry(1.3, 1.5)), kM); kapi.position.y = 0.75; kg.add(kapi);
+      const ust = new THREE.Mesh(paylas('kemerUst', () => new THREE.CircleGeometry(0.65, 16, 0, Math.PI)), kM); ust.position.y = 1.5; kg.add(ust);
+      const cerceve = new THREE.Mesh(paylas('kemerCerceve', () => new THREE.BoxGeometry(1.6, 0.14, 0.12)), cM); cerceve.position.set(0, 2.35, 0.05); kg.add(cerceve);
       if (i % 2 === 0) {
         const m = new THREE.Group(), b2 = a + 1.7 / r; m.position.set(Math.sin(b2) * (R + 0.8), 1.9, Math.cos(b2) * (R + 0.8)); g.add(m);
-        m.add(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.035, 0.45, 6), new THREE.MeshStandardMaterial({ color: 0x3a2414 })));
-        const alev = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffa21a })); alev.position.y = 0.3; alev.scale.y = 1.6; m.add(alev);
+        m.add(new THREE.Mesh(paylas('mesaleG', () => new THREE.CylinderGeometry(0.05, 0.035, 0.45, 6)), paylas('mesaleM', () => new THREE.MeshStandardMaterial({ color: 0x3a2414 }))));
+        const alev = new THREE.Mesh(paylas('alevG', () => new THREE.SphereGeometry(0.1, 8, 6)), paylas('alevM', () => new THREE.MeshBasicMaterial({ color: 0xffa21a }))); alev.position.y = 0.3; alev.scale.y = 1.6; m.add(alev);
         g.userData.alevler.push(alev);
       }
     }
@@ -206,8 +221,11 @@ const Sahne = (() => {
   // ---------- Kıvılcım / parçacık ----------
   const parcalar = [];
   const parcaG = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+  const parcaMat = new Map();
   function partikul(x, y, z, renk, sayi = 10, hiz = 3, omur = 0.6) {
-    const m = new THREE.MeshBasicMaterial({ color: renk, transparent: true });
+    if (parcalar.length > 400) return;   // telefon yorulmasın
+    let m = parcaMat.get(renk);
+    if (!m) { m = new THREE.MeshBasicMaterial({ color: renk }); parcaMat.set(renk, m); }
     for (let i = 0; i < sayi; i++) {
       const p = new THREE.Mesh(parcaG, m);
       p.position.set(x, y, z);
@@ -227,11 +245,16 @@ const Sahne = (() => {
     s.scale.set(1.9 * boy, 0.8 * boy, 1); s.position.set(x + (Math.random() - 0.5) * 0.4, y, z); s.renderOrder = 7;
     s.userData = { t: 0, vy: 1.6 }; scene.add(s); sayilar.push(s);
   }
+  const emojiMat = new Map();
   function emojiSprite(e, boy = 0.8) {
-    const c = document.createElement('canvas'); c.width = c.height = 128;
-    const x = c.getContext('2d'); x.font = '100px serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(e, 64, 72);
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true }));
+    let m = emojiMat.get(e);
+    if (!m) {
+      const c = document.createElement('canvas'); c.width = c.height = 128;
+      const x = c.getContext('2d'); x.font = '100px serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(e, 64, 72);
+      const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.userData.paylasimli = true;
+      m = new THREE.SpriteMaterial({ map: t, transparent: true }); m.userData.paylasimli = true; emojiMat.set(e, m);
+    }
+    const s = new THREE.Sprite(m);
     s.scale.set(boy, boy, 1); return s;
   }
 
@@ -259,33 +282,34 @@ const Sahne = (() => {
       var_.add(id);
       if (guclerMap.has(id)) return;
       const g = new THREE.Group();
-      const disk = new THREE.Mesh(new THREE.CircleGeometry(0.55, 24), new THREE.MeshBasicMaterial({ color: GUC_RENK[tur], transparent: true, opacity: 0.45, depthWrite: false }));
+      const disk = new THREE.Mesh(paylas('gucDisk', () => new THREE.CircleGeometry(0.55, 24)), paylas('gucMat' + tur, () => new THREE.MeshBasicMaterial({ color: GUC_RENK[tur], transparent: true, opacity: 0.45, depthWrite: false })));
       disk.rotation.x = -Math.PI / 2; disk.position.y = 0.04; g.add(disk);
       const s = emojiSprite(GUC_EMOJI[tur], 0.9); s.position.y = 0.9; g.add(s);
       g.position.set(x, 0, z); g.userData = { s, faz: Math.random() * 6 };
       scene.add(g); guclerMap.set(id, g);
       partikul(x, 0.5, z, GUC_RENK[tur], 8, 2);
     });
-    guclerMap.forEach((g, id) => { if (!var_.has(id)) { scene.remove(g); guclerMap.delete(id); } });
+    guclerMap.forEach((g, id) => { if (!var_.has(id)) { at(g); guclerMap.delete(id); } });
   }
   function gucleriTemizle() { gucleriCiz([]); }
 
   // ---------- Mermiler ----------
   const mermiMap = new Map();
+  const PG = (k, f) => paylas('g' + k, f), PM = (k, f) => paylas('m' + k, f);
   function mermiYap(tur) {
     const g = new THREE.Group();
     if (tur === 'ok') {
-      const c = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.8, 5), new THREE.MeshStandardMaterial({ color: 0x8a5a2a })); c.rotation.x = Math.PI / 2; g.add(c);
-      const u = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.14, 6), new THREE.MeshStandardMaterial({ color: 0xc8ced6, metalness: 0.7 })); u.rotation.x = Math.PI / 2; u.position.z = 0.45; g.add(u);
-      const t = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.01, 0.15), new THREE.MeshStandardMaterial({ color: 0xffffff })); t.position.z = -0.35; g.add(t);
+      const c = new THREE.Mesh(PG('okSap', () => new THREE.CylinderGeometry(0.02, 0.02, 0.8, 5)), PM('okSap', () => new THREE.MeshStandardMaterial({ color: 0x8a5a2a }))); c.rotation.x = Math.PI / 2; g.add(c);
+      const u = new THREE.Mesh(PG('okUc', () => new THREE.ConeGeometry(0.05, 0.14, 6)), PM('okUc', () => new THREE.MeshStandardMaterial({ color: 0xc8ced6, metalness: 0.7 }))); u.rotation.x = Math.PI / 2; u.position.z = 0.45; g.add(u);
+      const t = new THREE.Mesh(PG('okTuy', () => new THREE.BoxGeometry(0.12, 0.01, 0.15)), PM('beyaz', () => new THREE.MeshStandardMaterial({ color: 0xffffff }))); t.position.z = -0.35; g.add(t);
     } else if (tur === 'ates') {
-      g.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffa21a })));
-      g.add(new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 8), new THREE.MeshBasicMaterial({ color: 0xff4a1a, transparent: true, opacity: 0.4 })));
+      g.add(new THREE.Mesh(PG('ates1', () => new THREE.SphereGeometry(0.22, 12, 8)), PM('ates1', () => new THREE.MeshBasicMaterial({ color: 0xffa21a }))));
+      g.add(new THREE.Mesh(PG('ates2', () => new THREE.SphereGeometry(0.34, 12, 8)), PM('ates2', () => new THREE.MeshBasicMaterial({ color: 0xff4a1a, transparent: true, opacity: 0.4 }))));
     } else if (tur === 'domates') {
-      g.add(new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), new THREE.MeshStandardMaterial({ color: 0xe8302a, roughness: 0.4 })));
-      const s = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.04, 0.08), new THREE.MeshStandardMaterial({ color: 0x3a9a2a })); s.position.y = 0.13; g.add(s);
+      g.add(new THREE.Mesh(PG('domates', () => new THREE.SphereGeometry(0.14, 10, 8)), PM('domates', () => new THREE.MeshStandardMaterial({ color: 0xe8302a, roughness: 0.4 }))));
+      const s = new THREE.Mesh(PG('sap', () => new THREE.BoxGeometry(0.08, 0.04, 0.08)), PM('sap', () => new THREE.MeshStandardMaterial({ color: 0x3a9a2a }))); s.position.y = 0.13; g.add(s);
     } else {
-      g.add(new THREE.Mesh(new THREE.DodecahedronGeometry(0.11), new THREE.MeshStandardMaterial({ color: 0x8a8a8a })));
+      g.add(new THREE.Mesh(PG('tas', () => new THREE.DodecahedronGeometry(0.11)), PM('tas', () => new THREE.MeshStandardMaterial({ color: 0x8a8a8a }))));
     }
     g.traverse(m => { m.castShadow = true; });
     return g;
@@ -298,7 +322,7 @@ const Sahne = (() => {
       if (!g) { g = mermiYap(tur); g.position.set(x, 1.15, z); scene.add(g); mermiMap.set(id, g); g.userData.tur = tur; }
       g.userData.hx = x; g.userData.hz = z; g.rotation.y = yon;
     });
-    mermiMap.forEach((g, id) => { if (!var_.has(id)) { scene.remove(g); mermiMap.delete(id); } });
+    mermiMap.forEach((g, id) => { if (!var_.has(id)) { at(g); mermiMap.delete(id); } });
   }
   function mermiPatla(x, z, tur) {
     const renk = tur === 'domates' ? 0xe8302a : tur === 'ates' ? 0xff8a1a : tur === 'ok' ? 0xc8a070 : 0x9a9a9a;
@@ -329,13 +353,13 @@ const Sahne = (() => {
     const sy = arenaGrup?.userData.seyirci;
     if (sy && seyirciCosku > 0) {
       seyirciCosku = Math.max(0, seyirciCosku - dt * 0.4);
-      const m4 = new THREE.Matrix4(), s1 = new THREE.Vector3(1, 1, 1), q = new THREE.Quaternion(), ax = new THREE.Vector3(0, 1, 0);
+      const { m4, s1, q, ax, v } = gecici;
       sy.liste.forEach((p, i) => {
         p.faz += dt * 9;
         const z = Math.max(0, Math.sin(p.faz)) * 0.25 * Math.min(1, seyirciCosku);
         q.setFromAxisAngle(ax, Math.atan2(p.x, p.z) + Math.PI);
-        m4.compose(new THREE.Vector3(p.x, p.y + 0.3 + z, p.z), q, s1); sy.gI.setMatrixAt(i, m4);
-        m4.compose(new THREE.Vector3(p.x, p.y + 0.75 + z, p.z), q, s1); sy.bI.setMatrixAt(i, m4);
+        m4.compose(v.set(p.x, p.y + 0.3 + z, p.z), q, s1); sy.gI.setMatrixAt(i, m4);
+        m4.compose(v.set(p.x, p.y + 0.75 + z, p.z), q, s1); sy.bI.setMatrixAt(i, m4);
       });
       sy.gI.instanceMatrix.needsUpdate = true; sy.bI.instanceMatrix.needsUpdate = true;
     }
@@ -343,11 +367,12 @@ const Sahne = (() => {
     return dt;
   }
   let seyirciCosku = 0;
+  const gecici = { m4: new THREE.Matrix4(), s1: new THREE.Vector3(1, 1, 1), q: new THREE.Quaternion(), ax: new THREE.Vector3(0, 1, 0), v: new THREE.Vector3() };
   function cosku(k) { seyirciCosku = Math.max(seyirciCosku, k); }
 
   return {
-    kur, arenaKur, alanGuncelle, yorunge, yorungeAl, elle, kameraSifirla, metinSprite, sars, zemindeNokta, etiketYap, etiketCiz, partikul, sayiGoster, emojiSprite,
+    kur, arenaKur, alanGuncelle, at, paylas, yorunge, yorungeAl, elle, kameraSifirla, metinSprite, sars, zemindeNokta, etiketYap, etiketCiz, partikul, sayiGoster, emojiSprite,
     gucleriCiz, gucleriTemizle, mermileriCiz, mermiPatla, ciz, cosku, GUC_EMOJI, GUC_RENK,
-    get scene() { return scene; }, get camera() { return camera; },
+    get scene() { return scene; }, get camera() { return camera; }, get bellek() { return renderer.info.memory; },
   };
 })();

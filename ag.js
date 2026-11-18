@@ -34,7 +34,7 @@ const Ag = (() => {
     });
     peer.on('connection', bag => {
       const m0 = { bag, son: Date.now(), id: bag.peer };
-      bag.on('data', m => { m0.son = Date.now(); if (m?.tip !== 'nabiz') evMesaji(m0, m); });
+      bag.on('data', m => { m0.son = Date.now(); if (!m || typeof m !== 'object' || m.tip === 'nabiz') return; try { evMesaji(m0, m); } catch (e) { console.warn('mesaj hatası', e); } });
       const kapandi = () => oyuncuKoptu(bag.peer, bag);
       bag.on('close', kapandi); bag.on('error', kapandi);
       ag.baglantilar.set(bag.peer, m0);

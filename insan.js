@@ -11,15 +11,16 @@ const Insan = (() => {
   const RENK_AD = ['Kırmızı', 'Mavi', 'Yeşil', 'Sarı', 'Mor', 'Pembe', 'Turkuaz', 'Turuncu', 'Kahve', 'Beyaz'];
   const METAL = [0x9aa4ae, 0xc8ced6, 0x8a929c, 0xa8aeb6, 0xd8dee6, 0x6a6f78, 0x5a5f66, 0xe0f4ff];
   const ALTIN = [0xffcc22, 0xc8a030];
+  const paylasimli = o => { o.userData.paylasimli = true; return o; };
   const mat = new Map();
   function M(renk, ops = {}) {
     const metal = ops.metal ?? (METAL.includes(renk) || ALTIN.includes(renk));
     const k = renk + '|' + metal + '|' + (ops.isik ? 1 : 0) + '|' + (ops.saydam || 1) + '|' + (ops.puruz ?? '');
-    if (!mat.has(k)) mat.set(k, new THREE.MeshStandardMaterial({ color: renk, roughness: ops.puruz ?? (metal ? 0.32 : 0.8), metalness: metal ? 0.75 : 0, emissive: ops.isik ? renk : 0x000000, emissiveIntensity: ops.isik ? 0.9 : 0, transparent: !!ops.saydam, opacity: ops.saydam || 1 }));
+    if (!mat.has(k)) mat.set(k, paylasimli(new THREE.MeshStandardMaterial({ color: renk, roughness: ops.puruz ?? (metal ? 0.32 : 0.8), metalness: metal ? 0.75 : 0, emissive: ops.isik ? renk : 0x000000, emissiveIntensity: ops.isik ? 0.9 : 0, transparent: !!ops.saydam, opacity: ops.saydam || 1 })));
     return mat.get(k);
   }
   const geo = new Map();
-  const G = (k, f) => { if (!geo.has(k)) geo.set(k, f()); return geo.get(k); };
+  const G = (k, f) => { if (!geo.has(k)) geo.set(k, paylasimli(f())); return geo.get(k); };
   function kutu(w, h, d, renk, x = 0, y = 0, z = 0, ops) {
     const m = new THREE.Mesh(G(`b${w},${h},${d}`, () => new THREE.BoxGeometry(w, h, d)), M(renk, ops)); m.position.set(x, y, z); m.castShadow = true; return m;
   }
@@ -113,7 +114,7 @@ const Insan = (() => {
       case 'koni': g.add(silindir(0.001, 0.12, 0.3, r, 0, 0.3, 0)); g.add(kure(0.035, 0xffee55, 0, 0.46, 0)); [0.22, 0.3].forEach(y => g.add(silindir(0.09 - (y - 0.22), 0.1 - (y - 0.22), 0.02, 0xffee55, 0, y, 0))); break;
       case 'asci': g.add(silindir(0.17, 0.16, 0.12, r, 0, 0.21, 0)); g.add(kure(0.2, r, 0, 0.36, 0, {}, 1, 0.7, 1)); break;
       case 'tavuk': g.add(kutu(0.36, 0.38, 0.36, r, 0, 0.02, 0)); g.add(kutu(0.04, 0.12, 0.16, 0xe8202a, 0, 0.26, 0.02)); g.add(kutu(0.1, 0.06, 0.12, 0xffa020, 0, 0, 0.23)); g.add(kutu(0.06, 0.08, 0.03, 0xe8202a, 0, -0.08, 0.2)); [-1, 1].forEach(s => g.add(kutu(0.05, 0.05, 0.02, 0x111111, 0.09 * s, 0.07, 0.185))); break;
-      case 'kova': g.add(silindir(0.19, 0.16, 0.26, r, 0, 0.14, 0)); { const t = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.01, 6, 16, Math.PI), M(0x555555, { metal: true })); t.position.y = 0.27; g.add(t); } g.add(silindir(0.195, 0.195, 0.02, 0x666666, 0, 0.05, 0)); break;
+      case 'kova': g.add(silindir(0.19, 0.16, 0.26, r, 0, 0.14, 0)); { const t = new THREE.Mesh(G('tKova', () => new THREE.TorusGeometry(0.18, 0.01, 6, 16, Math.PI)), M(0x555555, { metal: true })); t.position.y = 0.27; g.add(t); } g.add(silindir(0.195, 0.195, 0.02, 0x666666, 0, 0.05, 0)); break;
       case 'bere': g.add(kure(0.18, r, 0, 0.1, 0, {}, 1, 0.8, 1)); g.add(silindir(0.18, 0.18, 0.06, 0xf0f0f0, 0, 0.06, 0)); g.add(kure(0.06, 0xffffff, 0, 0.27, 0)); break;
       case 'kovboy': g.add(silindir(0.34, 0.34, 0.025, r, 0, 0.15, 0)); g.add(silindir(0.14, 0.17, 0.2, r, 0, 0.26, 0)); g.add(silindir(0.172, 0.172, 0.04, 0x2a1a0a, 0, 0.19, 0)); break;
       case 'kask': g.add(kure(0.19, r, 0, 0.06, -0.01, {}, 1, 0.9, 1.05)); [-1, 1].forEach(s => g.add(kutu(0.03, 0.14, 0.12, r, 0.16 * s, -0.06, 0.02))); break;
@@ -195,7 +196,7 @@ const Insan = (() => {
       case 'tuy': g.add(silindir(0.018, 0.018, 0.5, 0x3a2414, 0, 0.2, 0)); for (let i = 0; i < 8; i++) { const t = kure(0.07, r, Math.sin(i) * 0.06, 0.48 + (i % 4) * 0.05, Math.cos(i) * 0.06, { metal: false }, 0.7, 1.6, 0.7); g.add(t); } break;
       case 'balik': g.add(kure(0.12, r, 0, 0.36, 0, {}, 0.55, 2.2, 1)); { const k = kutu(0.02, 0.16, 0.2, r, 0, 0.06, 0); g.add(k); } [-1, 1].forEach(s => g.add(kure(0.022, 0xffffff, 0.05 * s, 0.56, 0.06, { metal: false }))); g.add(kutu(0.01, 0.12, 0.1, 0x6a94a8, 0, 0.38, 0.11)); break;
       case 'supurge': g.add(silindir(0.022, 0.022, 1.3, 0xc8945a, 0, 0.45, 0)); g.add(kutu(0.1, 0.06, 0.1, 0xd8302a, 0, 1.08, 0)); g.add(silindir(0.06, 0.2, 0.36, 0xe0c050, 0, 1.28, 0, {}, 10)); break;
-      case 'semsiye': g.add(silindir(0.018, 0.018, 1.0, 0x222222, 0, 0.35, 0)); { const k = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.015, 6, 10, Math.PI), M(0x222222)); k.position.y = -0.17; k.position.x = 0.06; g.add(k); } g.add(silindir(0.05, 0.16, 0.65, r, 0, 0.62, 0, {}, 8)); break;
+      case 'semsiye': g.add(silindir(0.018, 0.018, 1.0, 0x222222, 0, 0.35, 0)); { const k = new THREE.Mesh(G('tSemsiye', () => new THREE.TorusGeometry(0.06, 0.015, 6, 10, Math.PI)), M(0x222222)); k.position.y = -0.17; k.position.x = 0.06; g.add(k); } g.add(silindir(0.05, 0.16, 0.65, r, 0, 0.62, 0, {}, 8)); break;
       case 'baget': g.add(silindir(0.055, 0.06, 0.95, r, 0, 0.35, 0, {}, 10)); for (let i = 0; i < 4; i++) { const c = kutu(0.1, 0.012, 0.03, 0xf0d8a0, 0, 0.1 + i * 0.2, 0.05); c.rotation.z = 0.5; g.add(c); } break;
       case 'sopa': g.add(silindir(0.065, 0.025, 0.95, r, 0, 0.38, 0)); g.add(silindir(0.035, 0.035, 0.03, 0x222222, 0, -0.08, 0)); break;
       case 'torba': g.add(kure(0.16, 0xc8945a, 0, 0.0, 0.0, { metal: false }, 1, 0.9, 1)); [[0.06, 0.13], [-0.05, 0.12], [0.0, 0.16]].forEach(([a, b]) => g.add(kure(0.06, r, a, b, 0.04, { metal: false, puruz: 0.3 }))); break;
@@ -203,11 +204,11 @@ const Insan = (() => {
       case 'sapan': g.add(silindir(0.025, 0.025, 0.3, r, 0, 0.1, 0)); [-1, 1].forEach(s => { const c = silindir(0.02, 0.02, 0.2, r, 0.06 * s, 0.32, 0); c.rotation.z = -0.5 * s; g.add(c); }); g.add(kutu(0.2, 0.01, 0.01, 0x8a2a2a, 0, 0.4, 0)); break;
       case 'hancer': g.add(silindir(0.022, 0.022, 0.13, sap, 0, 0.03, 0)); g.add(kutu(0.14, 0.03, 0.04, 0xc8a030, 0, 0.11, 0)); { const b = kutu(0.055, 0.3, 0.012, r, 0, 0.27, 0); g.add(b); g.add(silindir(0.001, 0.028, 0.06, r, 0, 0.45, 0, {}, 4)); } break;
       case 'mizrak': g.add(silindir(0.022, 0.022, 1.8, r, 0, 0.7, 0)); g.add(silindir(0.001, 0.055, 0.26, 0xc8ced6, 0, 1.73, 0, { metal: true }, 4)); g.add(silindir(0.03, 0.03, 0.04, 0x8a2a2a, 0, 1.58, 0)); break;
-      case 'yay': { const y = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.022, 6, 20, Math.PI * 0.85), M(r)); y.rotation.y = Math.PI / 2; y.rotation.x = Math.PI / 2 - Math.PI * 0.425; y.position.z = -0.12; g.add(y); g.add(silindir(0.003, 0.003, 0.8, 0xffffff, 0, 0, -0.22)); g.add(kutu(0.04, 0.12, 0.05, 0x3a2414, 0, 0, 0.29)); } break;
+      case 'yay': { const y = new THREE.Mesh(G('tYay', () => new THREE.TorusGeometry(0.42, 0.022, 6, 20, Math.PI * 0.85)), M(r)); y.rotation.y = Math.PI / 2; y.rotation.x = Math.PI / 2 - Math.PI * 0.425; y.position.z = -0.12; g.add(y); g.add(silindir(0.003, 0.003, 0.8, 0xffffff, 0, 0, -0.22)); g.add(kutu(0.04, 0.12, 0.05, 0x3a2414, 0, 0, 0.29)); } break;
       case 'cekic': g.add(silindir(0.028, 0.028, 1.1, sap, 0, 0.45, 0)); g.add(kutu(0.44, 0.26, 0.26, r, 0, 1.0, 0, { metal: true })); g.add(kutu(0.46, 0.04, 0.27, 0x3a3f46, 0, 1.0, 0, { metal: true })); break;
       case 'kilic': g.add(silindir(0.022, 0.022, 0.2, sap, 0, 0.03, 0)); g.add(kure(0.035, 0xc8a030, 0, -0.08, 0)); g.add(kutu(0.26, 0.04, 0.05, 0xc8a030, 0, 0.15, 0)); g.add(kutu(0.07, 0.82, 0.015, r, 0, 0.58, 0)); g.add(kutu(0.012, 0.75, 0.017, 0x9aa0a8, 0, 0.56, 0)); g.add(silindir(0.001, 0.05, 0.1, r, 0, 1.03, 0, {}, 4)); break;
       case 'balta': g.add(silindir(0.026, 0.026, 1.0, sap, 0, 0.4, 0)); { const b = kutu(0.025, 0.36, 0.28, r, 0, 0.8, 0.13, { metal: true }); g.add(b); g.add(kutu(0.03, 0.4, 0.04, 0xe8ecf0, 0, 0.8, 0.28, { metal: true })); g.add(kutu(0.025, 0.12, 0.12, r, 0, 0.82, -0.08, { metal: true })); } break;
-      case 'arbalet': g.add(kutu(0.06, 0.06, 0.58, r, 0, 0.0, 0.15)); { const k = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.02, 6, 14, Math.PI * 0.7), M(0x3a2414)); k.rotation.x = -Math.PI / 2; k.rotation.z = Math.PI * 0.15; k.position.z = 0.32; g.add(k); } g.add(kutu(0.5, 0.004, 0.004, 0xffffff, 0, 0.01, 0.12)); break;
+      case 'arbalet': g.add(kutu(0.06, 0.06, 0.58, r, 0, 0.0, 0.15)); { const k = new THREE.Mesh(G('tArbalet', () => new THREE.TorusGeometry(0.3, 0.02, 6, 14, Math.PI * 0.7)), M(0x3a2414)); k.rotation.x = -Math.PI / 2; k.rotation.z = Math.PI * 0.15; k.position.z = 0.32; g.add(k); } g.add(kutu(0.5, 0.004, 0.004, 0xffffff, 0, 0.01, 0.12)); break;
       case 'asa': g.add(silindir(0.028, 0.035, 1.3, 0x5a3a1a, 0, 0.45, 0)); for (let i = 0; i < 4; i++) { const c = silindir(0.012, 0.012, 0.18, 0x5a3a1a, Math.sin(i * 1.57) * 0.06, 1.15, Math.cos(i * 1.57) * 0.06); c.rotation.z = Math.sin(i * 1.57) * 0.4; c.rotation.x = -Math.cos(i * 1.57) * 0.4; g.add(c); } g.add(kure(0.1, r, 0, 1.2, 0, { isik: true })); break;
       default: break;
     }
@@ -221,7 +222,7 @@ const Insan = (() => {
       case 'yuvarlak': {
         const ayna = r === 0xe0f4ff;
         g.add(silindir(0.32, 0.32, 0.045, r, 0, -0.08, 0, ayna ? { metal: true, puruz: 0.02 } : {}, 24));
-        const k = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.022, 6, 24), M(ayna ? 0xc8a030 : 0x444444)); k.rotation.x = Math.PI / 2; k.position.y = -0.08; g.add(k);
+        const k = new THREE.Mesh(G('tKalkan', () => new THREE.TorusGeometry(0.32, 0.022, 6, 24)), M(ayna ? 0xc8a030 : 0x444444)); k.rotation.x = Math.PI / 2; k.position.y = -0.08; g.add(k);
         g.add(silindir(0.07, 0.07, 0.07, ayna ? 0xc8a030 : 0x444444, 0, -0.11, 0, { metal: true }));
         if (r === 0x8a5a2a) for (let i = -1; i <= 1; i++) g.add(kutu(0.012, 0.047, 0.6, 0x5a3416, i * 0.16, -0.08, 0));
         break;
