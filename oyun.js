@@ -5,7 +5,7 @@
 // =============================================================
 
 const Oyun = (() => {
-  const SURUM = 3;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
+  const SURUM = 4;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
   const $ = id => document.getElementById(id);
   const E = Esya;
   Sahne.kur($('sahne'));
@@ -21,7 +21,7 @@ const Oyun = (() => {
 
   let mod = null, benimId = null;
   const gucVarsayilan = () => ({ mana: true, hiz: true, can: true, koruma: true });
-  let lobi = { botlar: [], ayar: { hedef: 5, guc: gucVarsayilan() } };
+  let lobi = { botlar: [], ayar: { hedef: 5, guc: gucVarsayilan(), secimSure: 10, zarSure: 10, kararSure: 10 } };
   let oyun = null;
 
   // ---------- Giriş ----------
@@ -92,12 +92,13 @@ const Oyun = (() => {
     $('lobiListe').innerHTML = L.map((p, i) => `<li style="--r:${hex(Insan.RENKLER[i])}"><span>${p.bot ? '🤖 ' : ''}${p.id === benimId ? '⭐ ' : ''}${kacis(p.ad)}${p.ses ? ' 🎤' : ''}</span><small>${Insan.RENK_AD[i]}</small></li>`).join('');
     $('ayHedef').value = String(lobi.ayar.hedef);
     $('ayHedef').disabled = !yonetici();
+    [['aySecim', 'secimSure'], ['ayZar', 'zarSure'], ['ayKarar', 'kararSure']].forEach(([el, k]) => { $(el).value = String(lobi.ayar[k] || 10); $(el).disabled = !yonetici(); });
     document.querySelectorAll('#gucler input').forEach(c => { c.checked = !!lobi.ayar.guc[c.dataset.guc]; c.disabled = !yonetici(); });
     $('hepsiBtn').classList.toggle('gizli', !yonetici());
     $('botSatir').classList.toggle('gizli', !yonetici());
     $('botEkleBtn').disabled = L.length >= 10; $('botCikarBtn').disabled = !lobi.botlar.length;
     const acik = Object.values(lobi.ayar.guc).filter(Boolean).length;
-    $('ayarOzet').textContent = `${L.length} oyuncu · ${lobi.ayar.hedef} puan · ${acik ? acik + ' güçlendirme' : 'güçlendirme yok'}`;
+    $('ayarOzet').textContent = `${L.length} oyuncu · ${lobi.ayar.hedef} puan · seçim ${lobi.ayar.secimSure || 10} sn · ${acik ? acik + ' güçlendirme' : 'güçlendirme yok'}`;
     $('baslaBtn').classList.toggle('gizli', !yonetici());
     $('lobiMikBtn').classList.toggle('gizli', mod === 'tek');
     document.querySelector('.kodKutu').classList.toggle('gizli', mod === 'tek');
@@ -111,6 +112,8 @@ const Oyun = (() => {
   }));
   $('hepsiBtn').onclick = () => { if (!yonetici()) return; lobi.ayar.guc = gucVarsayilan(); lobiYay(); lobiCiz(); };
   $('ayHedef').addEventListener('change', () => { if (!yonetici()) return; lobi.ayar.hedef = +$('ayHedef').value; lobiYay(); lobiCiz(); });
+  [['aySecim', 'secimSure'], ['ayZar', 'zarSure'], ['ayKarar', 'kararSure']].forEach(([el, k]) => $(el).addEventListener('change', () => { if (!yonetici()) return; lobi.ayar[k] = +$(el).value; try { localStorage.setItem('zs.' + k, $(el).value); } catch (e) { } lobiYay(); lobiCiz(); }));
+  try { ['secimSure', 'zarSure', 'kararSure'].forEach(k => { const v = +localStorage.getItem('zs.' + k); if (v) lobi.ayar[k] = v; }); } catch (e) { }
   $('kodKopyalaBtn').onclick = () => { navigator.clipboard?.writeText(Ag.kod).then(() => { $('lobiDurum').textContent = 'Kod kopyalandı.'; }).catch(() => {}); };
   $('lobiCikBtn').onclick = () => menuyeDon('');
   $('lobiMikBtn').onclick = mikDegistir;
@@ -182,7 +185,7 @@ const Oyun = (() => {
   function mesaj(m) {
     switch (m.tip) {
       case 'lobi':
-        lobi = { botlar: m.botlar || [], ayar: { ...m.ayar, guc: m.ayar.guc || gucVarsayilan() } };
+        lobi = { botlar: m.botlar || [], ayar: { secimSure: 10, zarSure: 10, kararSure: 10, ...m.ayar, guc: m.ayar.guc || gucVarsayilan() } };
         if (!Ag.evMi && m.surum !== SURUM) $('lobiDurum').innerHTML = `⚠️ <b>Sürümün farklı!</b> Oda sahibi: ${m.surum ?? 'eski'}, sen: ${SURUM}. Daha eski olan sayfayı yenilesin (gerekirse kapatıp aç).`;
         if (!oyun || oyun.bitti) lobiCiz();
         break;
@@ -283,7 +286,8 @@ const Oyun = (() => {
     // Sıra bende mi?
     const siradaki = m.faz === 'secim' ? m.sira[m.siraIdx] : -1;
     if (siradaki === benimNo() && oyun.sonSiraSes !== `${anahtar}.${m.siraIdx}`) { oyun.sonSiraSes = `${anahtar}.${m.siraIdx}`; Ses.sira(); setTimeout(() => banner('👉 SIRA SENDE!', 'Masadan bir eşyaya tıkla'), 900); }
-    if (m.faz === 'bekle' && onceki?.faz !== 'bekle' && m.sonraki === 'arena') setTimeout(() => banner('⚔️ HERKES KUŞANDI!', 'Arenaya çıkılıyor…'), 900);
+    if (m.faz === 'bekle' && onceki?.faz !== 'bekle' && m.sonraki === 'arena') setTimeout(() => { if (oyun?.d?.faz === 'bekle') banner('⚔️ HERKES KUŞANDI!', 'Arenaya çıkılıyor…'); }, 900);
+    if (m.faz === 'kararBekle' && onceki?.faz !== 'kararBekle') banner('🤔 KARARLAR BEKLENİYOR', `Arena ${m.sureTop} saniye bekliyor`);
     // Uçan eşyası olmayanlar hemen giyinir
     m.kusam.forEach((k, no) => { if (!oyun.giyinecek.has(no)) Insan.giydir(oyun.k.get(no).h, k); });
     siraPanelCiz(); kusamimCiz(); draftDurumCiz(); bilgiCiz(); kararCiz();
@@ -301,7 +305,7 @@ const Oyun = (() => {
     kutu.innerHTML = `<div class="kkUst">${E.YUVA_EMOJI[x.yuva]} Bu yuvada zaten eşyan var! Hangisi kalsın?</div>
       <div class="kkKartlar">${kart(x, '🆕 Yeni gelen', iyisi === 'yeni' ? 'iyi' : '')}<div class="kkVs">VS</div>${eski ? kart(eski, '🎒 Üstündeki', iyisi === 'eski' ? 'iyi' : '') : ''}</div>
       <div class="kkDugmeler"><button id="kkGiyBtn" class="ana">🔄 Yenisini giy</button><button id="kkKoruBtn">✋ Eskisini koru</button></div>
-      <div class="kkNot">Seçmezsen arena başlarken iyi olan (${iyisi === 'yeni' ? x.emoji + ' ' + kacis(x.ad) : eski.emoji + ' ' + kacis(eski.ad)}) kendiliğinden seçilir.${liste.length > 1 ? ` · ${liste.length - 1} karar daha bekliyor` : ''}</div>`;
+      <div class="kkNot">Arena başlamadan önce seçebilirsin (arena ${oyun.ayar.kararSure || 10} sn bekler). Seçmezsen iyi olan (${iyisi === 'yeni' ? x.emoji + ' ' + kacis(x.ad) : eski.emoji + ' ' + kacis(eski.ad)}) kendiliğinden seçilir.${liste.length > 1 ? ` · ${liste.length - 1} karar daha bekliyor` : ''}</div>`;
     kutu.classList.remove('gizli');
     $('kkGiyBtn').onclick = () => kararVer(id, true);
     $('kkKoruBtn').onclick = () => kararVer(id, false);
@@ -330,6 +334,10 @@ const Oyun = (() => {
     else if (d.faz === 'zarBitti') t = '📋 Sıra belli oldu! Eşyalar masaya geliyor…';
     else if (d.faz === 'secim') { const s = d.sira[d.siraIdx]; t = s === bn ? '👉 <b style="--r:#7aff5a">Sıra sende!</b> Masadan bir eşyaya tıkla' : `⏳ Sıra <b style="--r:${renkCss(s)}">${kacis(oyuncu(s).ad)}</b> oyuncusunda`; }
     else if (d.faz === 'bekle') t = d.sonraki === 'arena' ? '⚔️ Herkes kuşandı! Arenaya çıkılıyor…' : 'Sonraki tur geliyor…';
+    else if (d.faz === 'kararBekle') {
+      const kim = oyun.oyuncular.filter(p => (d.kararlar?.[p.no] || []).length).map(p => p.no);
+      t = kim.includes(bn) ? '🤔 <b style="--r:#ffd36a">Kararını ver!</b> Arena seni bekliyor' : `🤔 Karar bekleniyor: ${kim.map(no => `<b style="--r:${renkCss(no)}">${kacis(oyuncu(no).ad)}</b>`).join(', ')}`;
+    }
     $('draftDurum').innerHTML = t;
     $('draftBaslik').textContent = `🎲 Eşya seçimi · Tur ${Math.min(d.tur + 1, d.turSay)} / ${d.turSay}`;
     const zarBende = d.faz === 'zar' && d.bekleyen.includes(bn);
@@ -401,9 +409,9 @@ const Oyun = (() => {
   function sureCiz() {
     const d = oyun?.d; if (!d) return;
     const kalan = Math.max(0, d.sure - (performance.now() - d.alindi) / 1000);
-    const top = d.faz === 'secim' ? Motor.SECIM_SURE : d.faz === 'zar' ? Motor.ZAR_SURE : 0;
+    const top = d.sureTop || 0;
     $('draftSureDolu').style.width = top ? (kalan / top * 100) + '%' : '0%';
-    const benimIs = (d.faz === 'secim' && d.sira[d.siraIdx] === benimNo()) || (d.faz === 'zar' && d.bekleyen.includes(benimNo()));
+    const benimIs = (d.faz === 'secim' && d.sira[d.siraIdx] === benimNo()) || (d.faz === 'zar' && d.bekleyen.includes(benimNo())) || (d.faz === 'kararBekle' && (d.kararlar?.[benimNo()] || []).length);
     if (benimIs && kalan < 3.5 && Math.ceil(kalan) !== oyun.sonTik) { oyun.sonTik = Math.ceil(kalan); Ses.tik(); }
     $('draftSureYazi').textContent = top ? Math.ceil(kalan) + ' sn' : '';
   }

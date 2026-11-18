@@ -11,6 +11,7 @@ const Motor = (() => {
   const ZAR_SURE = 10;               // zarını atmak için saniye (atmayanınki kendiliğinden atılır)
   const ZAR_GOSTER = 3.2;            // son zar düştükten sonra sıra gösterilir, sonra eşyalar çıkar
   const ZAR_ESIT = 2.2;              // "eşit!" yazısı
+  const KARAR_SURE = 10;             // arenadan önce "yenisini giy / eskisini koru" için bekleme
   const GERI = 3;                    // arena geri sayımı
   const ALAN_BAS = 40, ALAN_SURE = 45, ALAN_MIN = 2.5;   // alan 40. saniyede daralmaya başlar, 45 saniyede küçülür
   const HIZ_TEMEL = 4.2, OYUNCU_R = 0.45, SUTUN_R = 0.9;
@@ -25,7 +26,7 @@ const Motor = (() => {
     durdur();
     geri = g; rnd = secenek.rastgele || Math.random;
     M = {
-      ayar: { hedef: ayar.hedef || 5, guc: ayar.guc || {} },
+      ayar: { hedef: ayar.hedef || 5, guc: ayar.guc || {}, secimSure: +ayar.secimSure || SECIM_SURE, zarSure: +ayar.zarSure || ZAR_SURE, kararSure: +ayar.kararSure || KARAR_SURE },
       oyuncular: liste.map((p, i) => ({ no: i, id: p.id, ad: p.ad, bot: !!p.bot, renk: p.renk ?? i, ten: p.ten ?? (i % 5), puan: 0, kusam: {} })),
       faz: 'bos', draftNo: 0, t: 0, tick: 0,
     };
@@ -71,7 +72,7 @@ const Motor = (() => {
     zarBekle();
   }
   function zarBekle() {
-    M.faz = 'zar'; M.sayac = ZAR_SURE;
+    M.faz = 'zar'; M.sayac = M.ayar.zarSure;
     M.d.bekleyen.forEach(no => { const p = M.oyuncular[no]; p.botZar = p.bot ? 0.6 + rnd() * 2.4 : null; });
     draftYolla();
   }
@@ -108,7 +109,7 @@ const Motor = (() => {
   function siradakiBasla() {
     const d = M.d, no = d.sira[d.siraIdx], p = M.oyuncular[no], kalan = kalanlar();
     M.faz = 'secim';
-    M.sayac = kalan.length === 1 ? 0.7 : SECIM_SURE;
+    M.sayac = kalan.length === 1 ? 0.7 : M.ayar.secimSure;
     p.botSec = null;
     if (p.bot || kalan.length === 1) {
       let en = kalan[0], enD = -1e9;
@@ -142,6 +143,7 @@ const Motor = (() => {
     yolla({
       tip: 'draft', faz: M.faz, tur: d.tur, turSay: d.turlar.length, esyalar: d.esyalar, alinan: d.alinan, asamalar: d.asamalar, sira: d.sira,
       bekleyen: d.bekleyen, sonZar: d.sonZar, esit: d.esit || null, kararlar: M.oyuncular.map(o => o.kararlar || []),
+      sureTop: M.faz === 'secim' ? M.ayar.secimSure : M.faz === 'zar' ? M.ayar.zarSure : M.faz === 'kararBekle' ? M.ayar.kararSure : 0,
       siraIdx: d.siraIdx, sure: M.sayac, son: d.son, kusam: M.oyuncular.map(o => o.kusam), sonraki: M.sonraki || null, draftNo: M.draftNo,
     });
   }
@@ -172,7 +174,13 @@ const Motor = (() => {
       }
       if (M.sayac <= 0) sec(no, kalanlar().reduce((a, i) => (E.al(d.esyalar[i]).p < E.al(d.esyalar[a]).p ? i : a)), true);
     } else if (M.faz === 'bekle') {
-      if (M.sayac <= 0) { if (M.sonraki === 'tur') turBaslat(); else arenaBaslat(); M.sonraki = null; }
+      if (M.sayac <= 0) {
+        if (M.sonraki === 'tur') { turBaslat(); M.sonraki = null; }
+        else if (kararBekleyen()) { M.faz = 'kararBekle'; M.sayac = M.ayar.kararSure; draftYolla(); }   // karar vermeyen var: arena bekler
+        else { arenaBaslat(); M.sonraki = null; }
+      }
+    } else if (M.faz === 'kararBekle') {
+      if (M.sayac <= 0 || !kararBekleyen()) { arenaBaslat(); M.sonraki = null; }
     }
     // İmleçleri gönder
     if (M.tick % 3 === 0) {
@@ -189,12 +197,13 @@ const Motor = (() => {
       p.kararlar = [];
     });
   }
+  const kararBekleyen = () => M.oyuncular.some(p => !p.bot && (p.kararlar || []).length);
   function karar(p, id, giy) {
     const k = (p.kararlar || []).indexOf(id);
     if (k < 0) return;
     p.kararlar.splice(k, 1);
     if (giy) p.kusam[E.al(id).yuva] = id;
-    if (M.d && !M.arena) draftYolla();
+    if (M.d && !M.arena) { if (M.faz === 'kararBekle' && !kararBekleyen()) M.sayac = Math.min(M.sayac, 0.6); draftYolla(); }
   }
   function arenaBaslat() {
     kararlariBitir();
@@ -492,7 +501,7 @@ const Motor = (() => {
 
   return {
     baslat, durdur, adim, girdi, cikis, esyaYeri, siralama: n => siralama(n), statlar: E.statlar,
-    SECIM_SURE, ZAR_SURE, ZAR_GOSTER, ALAN_BAS, ALAN_SURE, HIZ_TEMEL, OYUNCU_R, GUC_SURE,
+    SECIM_SURE, ZAR_SURE, ZAR_GOSTER, KARAR_SURE, ALAN_BAS, ALAN_SURE, HIZ_TEMEL, OYUNCU_R, GUC_SURE,
     get M() { return M; }, rastgeleKoy(f) { rnd = f; },
   };
 })();

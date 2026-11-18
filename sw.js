@@ -3,7 +3,7 @@
 // Oyunu güncelleyip yüklerken ONBELLEK numarasını 1 artır (oyun.js SURUM ile aynı).
 // =============================================================
 
-const ONBELLEK = 'zarena-savaslari-v3';
+const ONBELLEK = 'zarena-savaslari-v4';
 const DOSYALAR = [
   './', 'index.html', 'style.css', 'esyalar.js', 'motor.js', 'insan.js', 'masa.js', 'sahne.js', 'ag.js', 'ses.js', 'oyun.js',
   'manifest.webmanifest', 'ikonlar/ikon-192.png', 'ikonlar/ikon-512.png',

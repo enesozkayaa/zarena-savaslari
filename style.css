@@ -27,6 +27,7 @@ label { font-weight: 800; font-size: 14px; }
 .kodKutu { font-size: 18px; } .kodKutu b { font-family: 'Lilita One', sans-serif; font-size: 28px; letter-spacing: 3px; color: #8a2a0a; font-weight: 400; }
 #lobiListe { list-style: none; padding: 0; margin: 0; display: grid; gap: 5px; max-height: 38vh; overflow-y: auto; }
 #lobiListe li { background: #fff4dc; border: 2px solid #d8b47a; border-left: 10px solid var(--r); border-radius: 8px; padding: 7px 10px; font-weight: 800; display: flex; justify-content: space-between; gap: 6px; }
+#ayarlar { display: grid; gap: 6px; }
 #ayarlar label { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 #ayarlar select { padding: 6px 8px; }
 #gucler { border: 2px solid #0002; border-radius: 10px; padding: 6px 10px 8px; margin: 0; display: grid; gap: 5px; }
