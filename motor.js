@@ -39,7 +39,7 @@ const Motor = (() => {
   // ================= EŞYA SEÇİMİ =================
   function draftBaslat() {
     M.draftNo++;
-    M.oyuncular.forEach(o => { o.kusam = {}; });
+    M.oyuncular.forEach(o => { o.kusam = {}; o.kararlar = []; });
     M.d = { turlar: E.draftHazirla(M.oyuncular.length, rnd), tur: 0 };
     M.arena = null;
     turBaslat();
@@ -121,8 +121,11 @@ const Motor = (() => {
     const d = M.d;
     if (M.faz !== 'secim' || d.sira[d.siraIdx] !== no || d.alinan[i] !== undefined || i < 0 || i >= d.esyalar.length) return false;
     d.alinan[i] = no;
-    const x = E.al(d.esyalar[i]);
-    M.oyuncular[no].kusam[x.yuva] = x.id;      // aynı yuvadaki eski eşya gider
+    const x = E.al(d.esyalar[i]), p = M.oyuncular[no];
+    // Yuva boşsa hemen giyer. Doluysa oyuncu seçer: "yenisini giy" ya da "eskisini koru" (arena başlayana kadar)
+    if (!p.kusam[x.yuva]) p.kusam[x.yuva] = x.id;
+    else if (p.bot) { if (x.p > E.al(p.kusam[x.yuva]).p) p.kusam[x.yuva] = x.id; }
+    else p.kararlar.push(x.id);
     d.son = { no, i, oto: !!oto };
     d.siraIdx++;
     if (d.siraIdx >= d.sira.length) {
@@ -138,7 +141,7 @@ const Motor = (() => {
     const d = M.d;
     yolla({
       tip: 'draft', faz: M.faz, tur: d.tur, turSay: d.turlar.length, esyalar: d.esyalar, alinan: d.alinan, asamalar: d.asamalar, sira: d.sira,
-      bekleyen: d.bekleyen, sonZar: d.sonZar, esit: d.esit || null,
+      bekleyen: d.bekleyen, sonZar: d.sonZar, esit: d.esit || null, kararlar: M.oyuncular.map(o => o.kararlar || []),
       siraIdx: d.siraIdx, sure: M.sayac, son: d.son, kusam: M.oyuncular.map(o => o.kusam), sonraki: M.sonraki || null, draftNo: M.draftNo,
     });
   }
@@ -179,7 +182,22 @@ const Motor = (() => {
   }
 
   // ================= ARENA =================
+  // Karar verilmeyen eşyalar: iyi olanı otomatik giyilir
+  function kararlariBitir() {
+    M.oyuncular.forEach(p => {
+      (p.kararlar || []).forEach(id => { const x = E.al(id), eski = E.al(p.kusam[x.yuva]); if (!eski || x.p > eski.p) p.kusam[x.yuva] = id; });
+      p.kararlar = [];
+    });
+  }
+  function karar(p, id, giy) {
+    const k = (p.kararlar || []).indexOf(id);
+    if (k < 0) return;
+    p.kararlar.splice(k, 1);
+    if (giy) p.kusam[E.al(id).yuva] = id;
+    if (M.d && !M.arena) draftYolla();
+  }
   function arenaBaslat() {
+    kararlariBitir();
     const n = M.oyuncular.length, R = 10 + n * 1.0;
     const sutunlar = [0, 1, 2, 3].map(k => { const a = Math.PI / 4 + k * Math.PI / 2; return { x: Math.sin(a) * R * 0.5, z: Math.cos(a) * R * 0.5, r: SUTUN_R }; });
     M.arena = { R, zr: R, sutunlar, t: 0, mermiler: [], guclar: [], mermiNo: 0, gucNo: 0, gucSayac: 4, olaylar: [], bitisSayac: -1, gucDegisti: true };
@@ -445,6 +463,7 @@ const Motor = (() => {
     if (!p) return;
     if (m.tip === 'im') { p.imlec = { x: Math.max(-8, Math.min(8, +m.x || 0)), z: Math.max(-4, Math.min(4, +m.z || 0)) }; p.imlecT = M.t; return; }
     if (m.tip === 'zarAt') { zarAt(p.no); return; }
+    if (m.tip === 'karar') { if (!M.arena) karar(p, String(m.id), !!m.giy); return; }
     if (m.tip === 'sec') { sec(p.no, m.i | 0, false); return; }
     if (!M.arena || p.olu) return;
     if (m.tip === 'k') {
@@ -465,6 +484,7 @@ const Motor = (() => {
     const p = M.oyuncular.find(o => o.id === id && !o.bot);
     if (!p) return;
     p.bot = true; p.cikti = false; p.ad = p.ad + ' 🤖';
+    (p.kararlar || []).slice().forEach(id => { const x = E.al(id), eski = E.al(p.kusam[x.yuva]); karar(p, id, !eski || x.p > eski.p); });
     yolla({ tip: 'cikti', no: p.no, ad: p.ad });
     if (M.faz === 'secim' && M.d.sira[M.d.siraIdx] === p.no) siradakiBasla();
     if (M.faz === 'zar' && M.d.bekleyen.includes(p.no)) p.botZar = 0.5;

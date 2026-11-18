@@ -5,7 +5,7 @@
 // =============================================================
 
 const Oyun = (() => {
-  const SURUM = 2;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
+  const SURUM = 3;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
   const $ = id => document.getElementById(id);
   const E = Esya;
   Sahne.kur($('sahne'));
@@ -275,7 +275,7 @@ const Oyun = (() => {
       oyun.ucanlar.add(m.son.i);
       const { no, i, oto } = m.son, x = E.al(m.esyalar[i]);
       oyun.giyinecek.add(no);
-      Masa.esyaUcur(i, no, () => { if (!oyun) return; oyun.giyinecek.delete(no); const v = oyun.k.get(no); Insan.giydir(v.h, oyun.d.kusam[no]); Insan.zarAt(v.h); kusamimCiz(); });
+      Masa.esyaUcur(i, no, () => { if (!oyun) return; oyun.giyinecek.delete(no); const v = oyun.k.get(no); Insan.giydir(v.h, oyun.d.kusam[no]); Insan.zarAt(v.h); kusamimCiz(); kararCiz(); siraPanelCiz(); });
       banner(`${kacisYok(oyuncu(no).ad)} → ${x.emoji} ${x.ad}`, oto ? '⏱️ Süre bitti, en kötüsü verildi!' : `${E.YUVA_EMOJI[x.yuva]} ${E.YUVA_AD[x.yuva]}`, renkCss(no));
       (oto ? Ses.kotuSec : Ses.sec)();
       if (oyun.secili === i) { oyun.secili = -1; $('esyaBilgi').classList.add('gizli'); }
@@ -286,7 +286,31 @@ const Oyun = (() => {
     if (m.faz === 'bekle' && onceki?.faz !== 'bekle' && m.sonraki === 'arena') setTimeout(() => banner('⚔️ HERKES KUŞANDI!', 'Arenaya çıkılıyor…'), 900);
     // Uçan eşyası olmayanlar hemen giyinir
     m.kusam.forEach((k, no) => { if (!oyun.giyinecek.has(no)) Insan.giydir(oyun.k.get(no).h, k); });
-    siraPanelCiz(); kusamimCiz(); draftDurumCiz(); bilgiCiz();
+    siraPanelCiz(); kusamimCiz(); draftDurumCiz(); bilgiCiz(); kararCiz();
+  }
+  // "Yenisini giy / Eskisini koru": aynı yuvaya ikinci eşya gelince
+  function kararCiz() {
+    const d = oyun?.d, bn = benimNo(), kutu = $('kararKutu');
+    const liste = d && bn >= 0 ? (d.kararlar?.[bn] || []) : [];
+    if (!liste.length || oyun.giyinecek?.has(bn)) { kutu.classList.add('gizli'); return; }
+    const id = liste[0], x = E.al(id), eski = E.al((d.kusam[bn] || {})[x.yuva]);
+    if (kutu.dataset.id === id && !kutu.classList.contains('gizli')) return;
+    kutu.dataset.id = id;
+    const kart = (e, baslik, sinif) => `<div class="kkKart ${sinif} p${e.p}"><div class="kkBaslik">${baslik}</div><div class="kkEmo">${e.emoji}</div><div class="kkAd">${kacis(e.ad)}</div><div class="kkYildiz">${'★'.repeat(Math.max(1, Math.round(e.p / 2)))}${'☆'.repeat(5 - Math.max(1, Math.round(e.p / 2)))}</div><ul>${ozellikYazi(e).map(t => `<li>${t}</li>`).join('')}</ul></div>`;
+    const iyisi = x.p > (eski?.p ?? -1) ? 'yeni' : 'eski';
+    kutu.innerHTML = `<div class="kkUst">${E.YUVA_EMOJI[x.yuva]} Bu yuvada zaten eşyan var! Hangisi kalsın?</div>
+      <div class="kkKartlar">${kart(x, '🆕 Yeni gelen', iyisi === 'yeni' ? 'iyi' : '')}<div class="kkVs">VS</div>${eski ? kart(eski, '🎒 Üstündeki', iyisi === 'eski' ? 'iyi' : '') : ''}</div>
+      <div class="kkDugmeler"><button id="kkGiyBtn" class="ana">🔄 Yenisini giy</button><button id="kkKoruBtn">✋ Eskisini koru</button></div>
+      <div class="kkNot">Seçmezsen arena başlarken iyi olan (${iyisi === 'yeni' ? x.emoji + ' ' + kacis(x.ad) : eski.emoji + ' ' + kacis(eski.ad)}) kendiliğinden seçilir.${liste.length > 1 ? ` · ${liste.length - 1} karar daha bekliyor` : ''}</div>`;
+    kutu.classList.remove('gizli');
+    $('kkGiyBtn').onclick = () => kararVer(id, true);
+    $('kkKoruBtn').onclick = () => kararVer(id, false);
+    Ses.sira();
+  }
+  function kararVer(id, giy) {
+    const kutu = $('kararKutu'); kutu.classList.add('gizli'); kutu.dataset.id = '';
+    eve({ tip: 'karar', id, giy });
+    banner(giy ? '🔄 YENİSİNİ GİYDİN' : '✋ ESKİSİNİ KORUDUN', E.al(id).ad + (giy ? ' üstünde' : ' masaya bırakıldı'));
   }
   const kacisYok = s => String(s);
   let bannerZaman = null;
@@ -332,9 +356,10 @@ const Oyun = (() => {
       const al = aldigi[no] ? E.al(aldigi[no]) : null;
       const kusam = d.kusam[no] || {};
       const ust = E.YUVALAR.map(y => kusam[y] ? E.al(kusam[y]).emoji : '').join('');
+      const dusunuyor = (d.kararlar?.[no] || []).length && !oyun.giyinecek?.has(no);
       return `<div class="spSatir${no === siradaki ? ' siradaki' : ''}${no === bn ? ' ben' : ''}" style="--r:${renkCss(no)}">
         <span class="spNo">${siraNo[no] || ''}</span><div class="spOrta"><div class="spAd">${kacis(oyuncu(no).ad)}${no === bn ? ' ⭐' : ''}${bekliyor ? ' <i>atıyor…</i>' : ''}</div>
-        <div class="spAlt">${al ? `<b>${al.emoji} ${kacis(al.ad)}</b>` : no === siradaki ? '<b class="dusun">seçiyor…</b>' : `<span class="ust">${ust}</span>`}</div></div><div class="spZar">${zarHtml}</div></div>`;
+        <div class="spAlt">${al ? `<b>${al.emoji} ${kacis(al.ad)}</b>${dusunuyor ? ' <i class="dus">🤔 giysin mi?</i>' : ''}` : no === siradaki ? '<b class="dusun">seçiyor…</b>' : `<span class="ust">${ust}</span>`}</div></div><div class="spZar">${zarHtml}</div></div>`;
     }).join('');
   }
   function kusamimCiz() {
@@ -461,6 +486,7 @@ const Oyun = (() => {
   let sol = false, sag = false, tekVur = false;
   const joy = { aktif: false, id: null, x: 0, y: 0 }, dokunVur = { basili: false }, dokunKalkan = { basili: false }, bakis = { id: null, x: 0, y: 0 };
   function arenaKur(m) {
+    $('kararKutu').classList.add('gizli'); $('kararKutu').dataset.id = '';
     oyun.faz = 'arena'; oyun.arena = { R: m.R, zr: m.R, f: 'geri', s: 3, sutunlar: m.sutunlar, sonSayi: -1 };
     Masa.temizle();
     Sahne.arenaKur(m.R, m.sutunlar);

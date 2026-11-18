@@ -88,7 +88,7 @@ label { font-weight: 800; font-size: 14px; }
 #kameraIpucu { position: absolute; right: max(10px, env(safe-area-inset-right)); bottom: calc(max(8px, env(safe-area-inset-bottom)) + 52px); color: #fff; font-size: 12px; font-weight: 800; background: #0008; border-radius: 10px; padding: 4px 6px 4px 10px; display: flex; gap: 6px; align-items: center; }
 #kameraIpucu button { background: #fff2; color: #fff; box-shadow: none; }
 body.dokun #kameraIpucu span { display: none; }
-#imlecler { position: fixed; inset: 0; pointer-events: none; z-index: 16; }
+#imlecler { position: fixed; inset: 0; pointer-events: none; z-index: 14; }
 .imlec { position: absolute; left: 0; top: 0; transition: opacity .4s; }
 .imlec svg { width: 22px; height: 22px; filter: drop-shadow(0 1px 2px #000a); }
 .imlec span { position: absolute; left: 16px; top: -16px; white-space: nowrap; background: var(--r); color: #000; font-size: 12px; font-weight: 900; padding: 1px 6px; border-radius: 6px; }
@@ -186,3 +186,22 @@ body.dokun #silahYazi { bottom: auto; top: calc(max(10px, env(safe-area-inset-to
 body.dokun #ipucu { display: none; }
 #izleYazi { bottom: calc(max(18px, env(safe-area-inset-bottom)) + 36px); }
 #izleYazi small { opacity: .75; }
+
+/* Yenisini giy / Eskisini koru */
+#kararKutu { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(460px, calc(100% - 20px)); background: #2a1608f2; color: #fff; border: 3px solid #ffd36a; border-radius: 16px; padding: 12px; box-shadow: 0 12px 40px #000c; z-index: 20; animation: kkGel .3s; }
+@keyframes kkGel { from { transform: translate(-50%, -50%) scale(.8); opacity: 0; } }
+.kkUst { font-weight: 900; font-size: 16px; text-align: center; color: #ffd36a; margin-bottom: 8px; }
+.kkKartlar { display: flex; gap: 8px; align-items: stretch; }
+.kkVs { align-self: center; font-family: 'Lilita One', sans-serif; font-size: 22px; color: #ff6a3a; }
+.kkKart { flex: 1; background: linear-gradient(#fff8e6, #f0d8a8); color: #2a1608; border: 3px solid #8a4a1a; border-radius: 12px; padding: 6px 8px; text-align: center; }
+.kkKart.iyi { border-color: #3fbf4a; box-shadow: 0 0 0 2px #3fbf4a, 0 0 14px #7aff5a88; }
+.kkKart.p8, .kkKart.p9, .kkKart.p10 { background: linear-gradient(#fff4c0, #ffcc4a); }
+.kkBaslik { font-size: 11px; font-weight: 900; opacity: .75; }
+.kkEmo { font-size: 34px; line-height: 1.1; }
+.kkAd { font-weight: 900; font-size: 15px; line-height: 1.1; }
+.kkYildiz { color: #d88a00; font-size: 12px; letter-spacing: -1px; }
+.kkKart ul { list-style: none; padding: 0; margin: 4px 0 0; font-size: 12px; font-weight: 800; display: grid; gap: 1px; }
+.kkDugmeler { display: flex; gap: 8px; margin-top: 10px; } .kkDugmeler button { flex: 1; }
+.kkNot { margin-top: 8px; font-size: 12px; font-weight: 700; opacity: .8; text-align: center; }
+.spAlt i.dus { font-style: normal; color: #ffd36a; }
+@media (max-width: 640px) { .kkEmo { font-size: 26px; } .kkAd { font-size: 13px; } .kkKart ul { font-size: 10px; } #kararKutu { top: 44%; } }
