@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Zarena Savaşları</title>
+  <meta name="description" content="Zarena Savaşları: zar at, en büyük atan ilk seçer! Kılıç mı süpürge mi? Kuşan ve arenada son kalan ol.">
+  <meta name="theme-color" content="#7a2a14">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="ikonlar/ikon-192.png">
+  <link rel="apple-touch-icon" href="ikonlar/ikon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="sahne"></canvas>
+
+  <!-- Giriş -->
+  <section id="giris" class="ekran">
+    <div class="kart">
+      <div class="baslik">ZARENA<br><span>SAVAŞLARI</span></div>
+      <p class="alt"><b>🎲 Zar at, eşyanı kap, arenaya çık!</b> En büyük zarı atan ilk seçer: kılıç mı, süpürge mi? Kıyafet alamayan donla dövüşür. Arenada son kalan ve en çok yere seren kazanır.</p>
+      <label for="adim">Adın</label>
+      <input id="adim" maxlength="14" placeholder="Adın" autocomplete="off">
+      <button id="tekBtn" class="ana">🤖 Botlarla oyna</button>
+      <button id="odaKurBtn">🌐 Online oda aç</button>
+      <div class="satir">
+        <input id="odaKoduGir" maxlength="5" placeholder="ODA KODU" autocomplete="off" autocapitalize="characters">
+        <button id="katilBtn">Katıl</button>
+      </div>
+      <p id="girisDurum" class="durum"></p>
+      <details class="nasil">
+        <summary>📖 Nasıl oynanır?</summary>
+        <ul>
+          <li>2 ile 10 kişi. Boş yerleri botlar doldurabilir.</li>
+          <li>🎲 <b>Eşya seçimi:</b> Her turda herkes zar atar. Ortaya oyuncu sayısı kadar eşya çıkar. En büyük zarı atan ilk seçer, sonra sırayla diğerleri. Eşit atanlar sadece kendi aralarında yeniden atar.</li>
+          <li>⏱️ Seçim süreli! Süre biterse kalanların <b>en kötüsü</b> sana verilir. Herkesin faresi ekranda görünür.</li>
+          <li>👕 Yuvalar: kafa, gövde, bacak, ayak, silah, kalkan. Aynı yuvadan yeni eşya alırsan eskisi gider. Kıyafeti olmayan donla, çıplak dövüşür ve canı az olur.</li>
+          <li>⚔️ <b>Arena:</b> Herkes aynı anda dövüşür. Her yere seriş <b>+1</b>, ayakta kalan son kişi <b>+2</b> puan alır. Hedef puana ilk ulaşan kazanır.</li>
+          <li>🔴 Bir süre sonra alan daralır. Kırmızı alanın dışında kalan can kaybeder, herkes ortaya gelmek zorunda!</li>
+          <li>✨ Yerdeki güçlendirmeler: 🔮 mana (güçlü vuruş), 🧪 hız iksiri, ❤️ can iksiri, 🫧 koruma balonu.</li>
+          <li>Bilgisayar: WASD yürü, fareyle nişan al, sol tık vur, sağ tık (ya da Shift) kalkan. K mikrofon.</li>
+          <li>Telefon: soldaki çubukla yürü, ⚔️ ile vur (en yakın rakibe döner), 🛡️ basılı tutunca kalkan.</li>
+          <li>Her arenadan sonra eşyalar sıfırlanır, yeni zarlar atılır.</li>
+        </ul>
+      </details>
+    </div>
+  </section>
+
+  <!-- Bekleme odası -->
+  <section id="lobi" class="ekran gizli">
+    <div class="kart">
+      <h2>Bekleme odası</h2>
+      <div class="kodKutu">Oda kodu: <b id="lobiKod">-----</b> <button id="kodKopyalaBtn" class="kucuk">Kopyala</button></div>
+      <ul id="lobiListe"></ul>
+      <div class="satir" id="botSatir">
+        <button id="botEkleBtn">➕ Bot ekle</button>
+        <button id="botCikarBtn">➖ Bot çıkar</button>
+      </div>
+      <div id="ayarlar">
+        <label>🏆 Kazanmak için puan <select id="ayHedef"><option value="3">3 puan</option><option value="5" selected>5 puan</option><option value="7">7 puan</option></select></label>
+      </div>
+      <fieldset id="gucler">
+        <legend>✨ Arenadaki güçlendirmeler</legend>
+        <label><input type="checkbox" data-guc="mana" checked> 🔮 Mana <small>8 sn güçlü vuruş</small></label>
+        <label><input type="checkbox" data-guc="hiz" checked> 🧪 Hız iksiri <small>6 sn hızlı koşu</small></label>
+        <label><input type="checkbox" data-guc="can" checked> ❤️ Can iksiri <small>+40 can</small></label>
+        <label><input type="checkbox" data-guc="koruma" checked> 🫧 Koruma balonu <small>6 sn yarım hasar</small></label>
+        <button id="hepsiBtn" class="kucuk">✅ Hepsini seç</button>
+      </fieldset>
+      <p id="ayarOzet" class="durum"></p>
+      <div class="satir">
+        <button id="lobiMikBtn">🎤 Mikrofon kapalı</button>
+        <button id="lobiCikBtn">🚪 Çık</button>
+      </div>
+      <button id="baslaBtn" class="ana">🎲 Oyunu başlat</button>
+      <p id="lobiDurum" class="durum"></p>
+      <p id="surumYazi" class="surum"></p>
+    </div>
+  </section>
+
+  <!-- Eşya seçimi -->
+  <section id="draft" class="gizli">
+    <div id="draftUst">
+      <div id="draftBaslik">🎲 Eşya seçimi</div>
+      <div id="draftDurum"></div>
+      <div id="draftSure"><div id="draftSureDolu"></div></div>
+    </div>
+    <div id="zarlar"></div>
+    <div id="tahtaKutu"><div id="tahta"></div><div id="imlecler"></div></div>
+    <div id="kusamim"></div>
+  </section>
+
+  <!-- Arena ekranı -->
+  <div id="hud" class="gizli">
+    <div id="ustSol">
+      <div id="benimCan"><div id="benimCanDolu"></div><span id="benimCanYazi"></span></div>
+      <div id="etkiler"></div>
+      <ol id="puanTablo"></ol>
+    </div>
+    <div id="ustOrta"><div id="kalanYazi"></div><div id="alanYazi"></div></div>
+    <div id="ustSag">
+      <button id="mikBtn" title="Mikrofon (K)">🎤</button>
+      <button id="sesBtn" title="Oyun sesi">🔊</button>
+      <button id="cikBtn" title="Oyundan çık">🚪</button>
+    </div>
+    <div id="akis"></div>
+    <div id="buyukYazi"></div>
+    <div id="izleYazi" class="gizli">💀 Yere serildin. Turun bitmesini izliyorsun…</div>
+    <div id="joystick" class="dokunmatik"><div id="joyTopuz"></div></div>
+    <button id="vurBtn" class="dokunmatik">⚔️</button>
+    <button id="kalkanBtn" class="dokunmatik">🛡️</button>
+  </div>
+
+  <!-- Tur sonu -->
+  <section id="turSonu" class="ekran gizli">
+    <div class="kart">
+      <div id="turSonuBaslik" class="baslik kucukBaslik">TUR BİTTİ</div>
+      <table id="turTablo"></table>
+      <p id="turSonuAlt" class="durum"></p>
+    </div>
+  </section>
+
+  <!-- Oyun sonu -->
+  <section id="sonuc" class="ekran gizli">
+    <div class="kart">
+      <div id="sonucBaslik" class="baslik kucukBaslik">KAZANDIN!</div>
+      <ol id="sonucSira" class="sira"></ol>
+      <div class="satir">
+        <button id="lobiyeBtn">↩ Bekleme odası</button>
+        <button id="tekrarBtn" class="ana">🔁 Tekrar oyna</button>
+      </div>
+      <p id="sonucBekle" class="durum">Oda sahibi yeni oyunu başlatacak…</p>
+    </div>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="esyalar.js"></script>
+  <script src="motor.js"></script>
+  <script src="insan.js"></script>
+  <script src="sahne.js"></script>
+  <script src="ag.js"></script>
+  <script src="ses.js"></script>
+  <script src="oyun.js"></script>
+  <script>
+    // iPhone sayfayı kendi kendine büyütmesin (iki parmak / çift dokunma)
+    ['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive: false }));
+    document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+    document.addEventListener('dblclick', e => e.preventDefault());
+    (function () {
+      const m = document.querySelector('meta[name=viewport]');
+      const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (!m || !ios) return;
+      const asil = m.getAttribute('content');
+      function sifirla() {
+        m.setAttribute('content', 'width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+        setTimeout(() => m.setAttribute('content', asil), 400);
+      }
+      document.addEventListener('focusout', e => { if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) setTimeout(sifirla, 50); });
+      window.addEventListener('orientationchange', () => setTimeout(sifirla, 300));
+      if (window.visualViewport) visualViewport.addEventListener('resize', () => {
+        const odak = document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+        if (!odak && visualViewport.scale > 1.01) sifirla();
+      });
+    })();
+    if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js');
+  </script>
+</body>
+</html>

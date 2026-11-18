@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<!--
+  Zarena Savaşları - uygulama simgesi. Adres sonuna ?boyut=512 yazılır.
+  PNG için: msedge --headless=new --user-data-dir=<geçici klasör> --hide-scrollbars --window-size=512,512 --screenshot=ikonlar/ikon-512.png "file:///.../araclar/ikon-ciz.html?boyut=512"
+-->
+<html>
+<head>
+<meta charset="UTF-8">
+<style>html, body { margin: 0; background: #7a2a14; overflow: hidden; } canvas { display: block; }</style>
+</head>
+<body>
+<script>
+  const boyut = +(new URLSearchParams(location.search).get('boyut') || 512);
+  const c = document.createElement('canvas'); c.width = c.height = boyut; document.body.appendChild(c);
+  const g = c.getContext('2d'); g.scale(boyut / 512, boyut / 512);
+  // Arka plan: kırmızı kolezyum
+  const ark = g.createRadialGradient(256, 200, 40, 256, 256, 380); ark.addColorStop(0, '#e8582a'); ark.addColorStop(1, '#5a1404');
+  g.fillStyle = ark; g.fillRect(0, 0, 512, 512);
+  // Arena kumu (elips)
+  g.fillStyle = '#c8a46a'; g.beginPath(); g.ellipse(256, 380, 250, 110, 0, 0, 7); g.fill();
+  g.fillStyle = '#e2c58c'; g.beginPath(); g.ellipse(256, 385, 220, 92, 0, 0, 7); g.fill();
+  // Tribün kemerleri
+  g.fillStyle = '#00000033';
+  for (let i = 0; i < 7; i++) { g.beginPath(); g.ellipse(40 + i * 72, 260, 22, 34, 0, Math.PI, 0); g.lineTo(62 + i * 72, 290); g.lineTo(18 + i * 72, 290); g.fill(); }
+  // Çapraz: kılıç ve süpürge
+  function kilic() {
+    g.fillStyle = '#e8ecf0'; g.beginPath(); g.moveTo(-14, -200); g.lineTo(14, -200); g.lineTo(14, 40); g.lineTo(0, 70); g.lineTo(-14, 40); g.fill();
+    g.fillStyle = '#b8c0c8'; g.fillRect(-3, -195, 6, 225);
+    g.fillStyle = '#d8a020'; g.fillRect(-50, -215, 100, 22);
+    g.fillStyle = '#6a3a14'; g.fillRect(-11, -280, 22, 68);
+    g.fillStyle = '#d8a020'; g.beginPath(); g.arc(0, -286, 16, 0, 7); g.fill();
+  }
+  function supurge() {
+    g.fillStyle = '#c8945a'; g.fillRect(-9, -280, 18, 240);
+    g.fillStyle = '#e8c050'; g.beginPath(); g.moveTo(-26, -50); g.lineTo(26, -50); g.lineTo(60, 70); g.lineTo(-60, 70); g.fill();
+    g.strokeStyle = '#a8802a'; g.lineWidth = 4; for (let i = -4; i <= 4; i++) { g.beginPath(); g.moveTo(i * 5, -40); g.lineTo(i * 13, 66); g.stroke(); }
+    g.fillStyle = '#d8302a'; g.fillRect(-28, -62, 56, 16);
+  }
+  g.save(); g.translate(256, 260); g.rotate(-0.62); g.translate(0, 40); supurge(); g.restore();
+  g.save(); g.translate(256, 260); g.rotate(0.62); g.translate(0, 40); kilic(); g.restore();
+  // Zar
+  g.save(); g.translate(256, 368); g.rotate(-0.18);
+  g.fillStyle = '#00000055'; g.beginPath(); g.roundRect(-70, -62, 140, 140, 26); g.fill();
+  g.fillStyle = '#ffffff'; g.beginPath(); g.roundRect(-74, -74, 148, 148, 26); g.fill();
+  g.strokeStyle = '#5a1404'; g.lineWidth = 6; g.stroke();
+  g.fillStyle = '#d8202a';
+  [[-40, -40], [40, -40], [0, 0], [-40, 40], [40, 40]].forEach(([x, y]) => { g.beginPath(); g.arc(x, y, 15, 0, 7); g.fill(); });
+  g.restore();
+</script>
+</body>
+</html>
