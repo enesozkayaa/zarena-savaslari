@@ -61,6 +61,7 @@
         <button id="botEkleBtn">➕ Bot ekle</button>
         <button id="botCikarBtn">➖ Bot çıkar</button>
       </div>
+      <button id="esyaAcBtn">🎒 Eşyaları gör / çıkar <small id="esyaSayi"></small></button>
       <div id="ayarlar">
         <label>🏆 Kazanmak için puan <select id="ayHedef"><option value="3">3 puan</option><option value="5" selected>5 puan</option><option value="7">7 puan</option></select></label>
         <label>🎒 Eşya turu (arena öncesi) <select id="ayTur"><option value="3">3 tur</option><option value="4">4 tur</option><option value="5" selected>5 tur</option><option value="6">6 tur</option><option value="7">7 tur</option></select></label>
@@ -75,10 +76,6 @@
         <label><input type="checkbox" data-guc="can" checked> ❤️ Can iksiri <small>+40 can</small></label>
         <label><input type="checkbox" data-guc="koruma" checked> 🫧 Koruma balonu <small>6 sn yarım hasar</small></label>
         <button id="hepsiBtn" class="kucuk">✅ Hepsini seç</button>
-      </fieldset>
-      <fieldset id="esyaAyar">
-        <legend>🎒 Masaya çıkacak eşyalar</legend>
-        <div class="satir"><span id="esyaSayi"></span><button id="esyaAcBtn" class="kucuk">👀 Eşyaları seç</button></div>
       </fieldset>
       <p id="ayarOzet" class="durum"></p>
       <div class="satir">
@@ -105,7 +102,7 @@
     <div id="kararKutu" class="gizli"></div>
     <button id="zarAtBtn" class="gizli">🎲 ZARINI AT!<small>Boşluk tuşu</small></button>
     <div id="kusamim"></div>
-    <div id="kameraIpucu"><span>🖱️ Sürükle: etrafında dön · Tekerlek: yakınlaş</span> <button id="kameraSifirBtn" class="kucuk">🎥 Sıfırla</button></div>
+    <div id="kameraIpucu"><span>🖱️ Sürükle: etrafında dön · Tekerlek: yakınlaş</span> <button id="kameraSifirBtn" class="kucuk">🎥 Sıfırla</button> <button id="oyunEsyaBtn" class="kucuk">🎒 Eşyalar</button></div>
   </section>
   <div id="imlecler"></div>
   <div id="ipucuKutu" class="gizli"></div>

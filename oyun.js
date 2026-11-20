@@ -5,7 +5,7 @@
 // =============================================================
 
 const Oyun = (() => {
-  const SURUM = 8;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
+  const SURUM = 9;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
   const $ = id => document.getElementById(id);
   const E = Esya;
   Sahne.kur($('sahne'));
@@ -101,8 +101,7 @@ const Oyun = (() => {
     $('ayarOzet').textContent = `${L.length} oyuncu · ${lobi.ayar.hedef} puan · ${lobi.ayar.turSay || 5} eşya turu · seçim ${lobi.ayar.secimSure || 10} sn · ${acik ? acik + ' güçlendirme' : 'güçlendirme yok'}`;
     $('baslaBtn').classList.toggle('gizli', !yonetici());
     { const acikE = E.LISTE.length - (lobi.ayar.kapali || []).filter(id => E.HARITA[id]).length;
-      $('esyaSayi').textContent = `${acikE} / ${E.LISTE.length} eşya açık`;
-      $('esyaAcBtn').textContent = yonetici() ? '👀 Eşyaları seç' : '👀 Eşyalara bak';
+      $('esyaAcBtn').innerHTML = `${yonetici() ? '🎒 Eşyaları gör / çıkar' : '🎒 Eşyalara bak'} <small id="esyaSayi">${acikE} / ${E.LISTE.length} eşya açık</small>`;
       if (!$('esyaPencere').classList.contains('gizli')) esyaListeCiz(); }
     $('lobiMikBtn').classList.toggle('gizli', mod === 'tek');
     document.querySelector('.kodKutu').classList.toggle('gizli', mod === 'tek');
@@ -128,7 +127,8 @@ const Oyun = (() => {
   function esyaListeCiz() {
     const kapali = new Set(lobi.ayar.kapali || []), yon = yonetici();
     $('esyaPencere').classList.toggle('izle', !yon);
-    $('esyaPencereYazi').textContent = yon ? 'Eşyaya tıkla: aç / kapat. Kapalı eşyalar masaya hiç çıkmaz. Fareyle üstüne gel: ne işe yaradığını gör.' : 'Hangi eşyaların açık olduğunu oda sahibi seçer. Fareyle üstüne gel: ne işe yaradığını gör.';
+    $('esyaPencereYazi').textContent = (yon ? 'İstemediğin eşyaya tıkla: üstü çizilir ve masaya hiç çıkmaz. Tekrar tıklarsan geri gelir. Fareyle üstüne gel: ne işe yaradığını gör.' : 'Hangi eşyaların açık olduğunu oda sahibi seçer. Fareyle üstüne gel: ne işe yaradığını gör.')
+      + (oyun && !oyun.bitti ? ' ⏭️ Oyun sürerken yapılan değişiklik, arenadan sonraki yeni eşya seçiminde geçerli olur.' : '');
     const acik = E.LISTE.filter(x => !kapali.has(x.id)).length, oyuncuS = Math.max(2, herkes().length);
     $('esyaPencereYazi').textContent += !acik ? ' ⚠️ Hiç eşya açık değil: oyunda HEPSİ kullanılır.' : acik < oyuncuS ? ` ⚠️ Çok az eşya açık (${acik}): aynı eşyalar tekrar tekrar çıkar.` : '';
     $('esyaListe').innerHTML = E.YUVALAR.map(y => {
@@ -148,14 +148,17 @@ const Oyun = (() => {
     if (cip) { const id = cip.dataset.id; kapali.has(id) ? kapali.delete(id) : kapali.add(id); }
     else if (yb) { const L = E.LISTE.filter(x => x.yuva === yb.dataset.yuva), hepsiAcik = L.every(x => !kapali.has(x.id)); L.forEach(x => hepsiAcik ? kapali.add(x.id) : kapali.delete(x.id)); }
     else return;
-    lobi.ayar.kapali = [...kapali]; kapaliKaydet(); lobiYay(); lobiCiz(); esyaListeCiz();
+    lobi.ayar.kapali = [...kapali]; kapaliKaydet(); oyundaUygula(); lobiYay(); lobiCiz(); esyaListeCiz();
   });
   document.querySelectorAll('.esyaDugmeler button').forEach(b => b.onclick = () => {
     if (!yonetici()) return;
     const k = b.dataset.sec;
     lobi.ayar.kapali = E.LISTE.filter(x => k === 'hic' || (k === 'kotu' && x.p > 4) || (k === 'iyi' && x.p < 5)).map(x => x.id);
-    kapaliKaydet(); lobiYay(); lobiCiz(); esyaListeCiz();
+    kapaliKaydet(); oyundaUygula(); lobiYay(); lobiCiz(); esyaListeCiz();
   });
+  // Oyun sürerken: oda sahibinin motoru bir sonraki eşya seçiminde bunu kullanır
+  function oyundaUygula() { if (oyun && yonetici() && Motor.M) Motor.M.ayar.kapali = (lobi.ayar.kapali || []).slice(); }
+  $('oyunEsyaBtn').onclick = () => { $('esyaPencere').classList.remove('gizli'); esyaListeCiz(); };
   try { const k = JSON.parse(localStorage.getItem('zs.kapali') || '[]'); if (Array.isArray(k)) lobi.ayar.kapali = k.filter(id => E.HARITA[id]); } catch (e) { }
 
   // ---------- Eşya açıklama kutusu (fareyle üstüne gelince) ----------
