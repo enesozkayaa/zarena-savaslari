@@ -76,6 +76,10 @@
         <label><input type="checkbox" data-guc="koruma" checked> 🫧 Koruma balonu <small>6 sn yarım hasar</small></label>
         <button id="hepsiBtn" class="kucuk">✅ Hepsini seç</button>
       </fieldset>
+      <fieldset id="esyaAyar">
+        <legend>🎒 Masaya çıkacak eşyalar</legend>
+        <div class="satir"><span id="esyaSayi"></span><button id="esyaAcBtn" class="kucuk">👀 Eşyaları seç</button></div>
+      </fieldset>
       <p id="ayarOzet" class="durum"></p>
       <div class="satir">
         <button id="lobiMikBtn">🎤 Mikrofon kapalı</button>
@@ -103,6 +107,23 @@
     <div id="kameraIpucu"><span>🖱️ Sürükle: etrafında dön · Tekerlek: yakınlaş</span> <button id="kameraSifirBtn" class="kucuk">🎥 Sıfırla</button></div>
   </section>
   <div id="imlecler"></div>
+  <div id="ipucuKutu" class="gizli"></div>
+
+  <!-- Eşya seçme penceresi (lobi) -->
+  <div id="esyaPencere" class="gizli">
+    <div class="kart">
+      <h2>🎒 Eşyalar</h2>
+      <p class="durum" id="esyaPencereYazi">Eşyaya tıkla: aç / kapat. Kapalı eşyalar masaya hiç çıkmaz. Fareyle üstüne gel: ne işe yaradığını gör.</p>
+      <div class="esyaDugmeler">
+        <button class="kucuk" data-sec="hepsi">✅ Hepsi</button>
+        <button class="kucuk" data-sec="hic">⬜ Hiçbiri</button>
+        <button class="kucuk" data-sec="kotu">😂 Sadece kötüler (★1-4)</button>
+        <button class="kucuk" data-sec="iyi">💪 Sadece iyiler (★5+)</button>
+      </div>
+      <div id="esyaListe"></div>
+      <button id="esyaKapatBtn" class="ana">Tamam</button>
+    </div>
+  </div>
 
   <!-- Arena ekranı -->
   <div id="hud" class="gizli">

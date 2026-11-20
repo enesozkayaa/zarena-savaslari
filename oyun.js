@@ -5,7 +5,7 @@
 // =============================================================
 
 const Oyun = (() => {
-  const SURUM = 6;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
+  const SURUM = 7;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
   const $ = id => document.getElementById(id);
   const E = Esya;
   Sahne.kur($('sahne'));
@@ -21,7 +21,7 @@ const Oyun = (() => {
 
   let mod = null, benimId = null;
   const gucVarsayilan = () => ({ mana: true, hiz: true, can: true, koruma: true });
-  let lobi = { botlar: [], ayar: { hedef: 5, guc: gucVarsayilan(), secimSure: 10, zarSure: 10, kararSure: 10, turSay: 5 } };
+  let lobi = { botlar: [], ayar: { hedef: 5, guc: gucVarsayilan(), secimSure: 10, zarSure: 10, kararSure: 10, turSay: 5, kapali: [] } };
   let oyun = null;
 
   // ---------- Giriş ----------
@@ -100,6 +100,10 @@ const Oyun = (() => {
     const acik = Object.values(lobi.ayar.guc).filter(Boolean).length;
     $('ayarOzet').textContent = `${L.length} oyuncu · ${lobi.ayar.hedef} puan · ${lobi.ayar.turSay || 5} eşya turu · seçim ${lobi.ayar.secimSure || 10} sn · ${acik ? acik + ' güçlendirme' : 'güçlendirme yok'}`;
     $('baslaBtn').classList.toggle('gizli', !yonetici());
+    { const acikE = E.LISTE.length - (lobi.ayar.kapali || []).filter(id => E.HARITA[id]).length;
+      $('esyaSayi').textContent = `${acikE} / ${E.LISTE.length} eşya açık`;
+      $('esyaAcBtn').textContent = yonetici() ? '👀 Eşyaları seç' : '👀 Eşyalara bak';
+      if (!$('esyaPencere').classList.contains('gizli')) esyaListeCiz(); }
     $('lobiMikBtn').classList.toggle('gizli', mod === 'tek');
     document.querySelector('.kodKutu').classList.toggle('gizli', mod === 'tek');
     if (yonetici()) $('lobiDurum').textContent = L.length < 2 ? 'En az 2 oyuncu gerekli: bot ekle.' : mod === 'ev' ? 'Arkadaşların oda koduyla katılabilir. Boş yerlere bot ekleyebilirsin.' : '';
@@ -114,6 +118,70 @@ const Oyun = (() => {
   $('ayHedef').addEventListener('change', () => { if (!yonetici()) return; lobi.ayar.hedef = +$('ayHedef').value; lobiYay(); lobiCiz(); });
   [['ayTur', 'turSay'], ['aySecim', 'secimSure'], ['ayZar', 'zarSure'], ['ayKarar', 'kararSure']].forEach(([el, k]) => $(el).addEventListener('change', () => { if (!yonetici()) return; lobi.ayar[k] = +$(el).value; try { localStorage.setItem('zs.' + k, $(el).value); } catch (e) { } lobiYay(); lobiCiz(); }));
   try { ['turSay', 'secimSure', 'zarSure', 'kararSure'].forEach(k => { const v = +localStorage.getItem('zs.' + k); if (v) lobi.ayar[k] = v; }); } catch (e) { }
+  // ---------- Eşya seçme penceresi ----------
+  function esyaIpucu(x) {
+    const yildiz = '★'.repeat(Math.max(1, Math.round(x.p / 2))) + '☆'.repeat(5 - Math.max(1, Math.round(x.p / 2)));
+    const ek = x.yuva === 'silah' && x.itme >= 10 ? ['🌀 Çok uzağa fırlatır'] : [];
+    return `<b>${x.emoji} ${kacis(x.ad)}</b>\n${E.YUVA_AD[x.yuva]} · ${yildiz} (${x.p}/10)\n` + [...ozellikYazi(x), ...ek].join('\n');
+  }
+  function kapaliKaydet() { try { localStorage.setItem('zs.kapali', JSON.stringify(lobi.ayar.kapali || [])); } catch (e) { } }
+  function esyaListeCiz() {
+    const kapali = new Set(lobi.ayar.kapali || []), yon = yonetici();
+    $('esyaPencere').classList.toggle('izle', !yon);
+    $('esyaPencereYazi').textContent = yon ? 'Eşyaya tıkla: aç / kapat. Kapalı eşyalar masaya hiç çıkmaz. Fareyle üstüne gel: ne işe yaradığını gör.' : 'Hangi eşyaların açık olduğunu oda sahibi seçer. Fareyle üstüne gel: ne işe yaradığını gör.';
+    const acik = E.LISTE.filter(x => !kapali.has(x.id)).length, oyuncuS = Math.max(2, herkes().length);
+    $('esyaPencereYazi').textContent += !acik ? ' ⚠️ Hiç eşya açık değil: oyunda HEPSİ kullanılır.' : acik < oyuncuS ? ` ⚠️ Çok az eşya açık (${acik}): aynı eşyalar tekrar tekrar çıkar.` : '';
+    $('esyaListe').innerHTML = E.YUVALAR.map(y => {
+      const L = E.LISTE.filter(x => x.yuva === y).sort((a, b) => a.p - b.p);
+      const ac = L.filter(x => !kapali.has(x.id)).length;
+      return `<div class="yuvaGrup"><h3><span>${E.YUVA_EMOJI[y]} ${E.YUVA_AD[y]} <small>(${ac}/${L.length})</small></span>${yon ? `<button class="kucuk" data-yuva="${y}">${ac === L.length ? '⬜ Hiçbiri' : '✅ Hepsi'}</button>` : ''}</h3><div class="esyaCipler">`
+        + L.map(x => `<button class="esyaCip${kapali.has(x.id) ? ' kapali' : ''}${x.p <= 4 ? ' kotu' : ''}" data-id="${x.id}" data-ipucu="${kacis(esyaIpucu(x))}">${x.emoji} ${kacis(x.ad)}<small>★${x.p}</small></button>`).join('')
+        + '</div></div>';
+    }).join('');
+  }
+  $('esyaAcBtn').onclick = () => { $('esyaPencere').classList.remove('gizli'); esyaListeCiz(); };
+  $('esyaKapatBtn').onclick = () => { $('esyaPencere').classList.add('gizli'); ipucuGizle(); };
+  $('esyaListe').addEventListener('click', e => {
+    if (!yonetici()) return;
+    const kapali = new Set(lobi.ayar.kapali || []);
+    const cip = e.target.closest('.esyaCip'), yb = e.target.closest('button[data-yuva]');
+    if (cip) { const id = cip.dataset.id; kapali.has(id) ? kapali.delete(id) : kapali.add(id); }
+    else if (yb) { const L = E.LISTE.filter(x => x.yuva === yb.dataset.yuva), hepsiAcik = L.every(x => !kapali.has(x.id)); L.forEach(x => hepsiAcik ? kapali.add(x.id) : kapali.delete(x.id)); }
+    else return;
+    lobi.ayar.kapali = [...kapali]; kapaliKaydet(); lobiYay(); lobiCiz(); esyaListeCiz();
+  });
+  document.querySelectorAll('.esyaDugmeler button').forEach(b => b.onclick = () => {
+    if (!yonetici()) return;
+    const k = b.dataset.sec;
+    lobi.ayar.kapali = E.LISTE.filter(x => k === 'hic' || (k === 'kotu' && x.p > 4) || (k === 'iyi' && x.p < 5)).map(x => x.id);
+    kapaliKaydet(); lobiYay(); lobiCiz(); esyaListeCiz();
+  });
+  try { const k = JSON.parse(localStorage.getItem('zs.kapali') || '[]'); if (Array.isArray(k)) lobi.ayar.kapali = k.filter(id => E.HARITA[id]); } catch (e) { }
+
+  // ---------- Eşya açıklama kutusu (fareyle üstüne gelince) ----------
+  const ipK = $('ipucuKutu');
+  let ipHedef = null, ipZaman = 0;
+  function ipucuGoster(el, x, y) {
+    ipHedef = el; ipK.innerHTML = el.dataset.ipucu; ipK.classList.remove('gizli');
+    const w = ipK.offsetWidth, h = ipK.offsetHeight;
+    let l = x + 14, t = y - h - 12;
+    if (l + w > innerWidth - 6) l = Math.max(6, x - w - 14);
+    if (t < 6) t = Math.min(innerHeight - h - 6, y + 18);
+    ipK.style.left = l + 'px'; ipK.style.top = t + 'px';
+  }
+  function ipucuGizle() { ipHedef = null; ipK.classList.add('gizli'); }
+  document.addEventListener('pointermove', e => {
+    if (e.pointerType === 'touch') return;
+    const el = e.target.closest?.('[data-ipucu]');
+    if (el) ipucuGoster(el, e.clientX, e.clientY); else if (ipHedef) ipucuGizle();
+  }, { passive: true });
+  document.addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'touch') return;
+    const el = e.target.closest?.('[data-ipucu]');
+    if (el && !el.classList.contains('esyaCip')) { ipucuGoster(el, e.clientX, e.clientY); clearTimeout(ipZaman); ipZaman = setTimeout(ipucuGizle, 2600); }
+    else if (ipHedef) ipucuGizle();
+  }, { passive: true });
+
   $('kodKopyalaBtn').onclick = () => { navigator.clipboard?.writeText(Ag.kod).then(() => { $('lobiDurum').textContent = 'Kod kopyalandı.'; }).catch(() => {}); };
   $('lobiCikBtn').onclick = () => menuyeDon('');
   $('lobiMikBtn').onclick = mikDegistir;
@@ -186,7 +254,7 @@ const Oyun = (() => {
   function mesaj(m) {
     switch (m.tip) {
       case 'lobi':
-        lobi = { botlar: m.botlar || [], ayar: { secimSure: 10, zarSure: 10, kararSure: 10, turSay: 5, ...m.ayar, guc: m.ayar.guc || gucVarsayilan() } };
+        lobi = { botlar: m.botlar || [], ayar: { secimSure: 10, zarSure: 10, kararSure: 10, turSay: 5, kapali: [], ...m.ayar, guc: m.ayar.guc || gucVarsayilan() } };
         if (!Ag.evMi && m.surum !== SURUM) $('lobiDurum').innerHTML = `⚠️ <b>Sürümün farklı!</b> Oda sahibi: ${m.surum ?? 'eski'}, sen: ${SURUM}. Daha eski olan sayfayı yenilesin (gerekirse kapatıp aç).`;
         if (!oyun || oyun.bitti) lobiCiz();
         break;
@@ -365,7 +433,7 @@ const Oyun = (() => {
       const zarHtml = zarlar.map((v, k) => `<span class="mzar${k < zarlar.length - 1 ? ' eski' : ''}">${zarYuz(v)}</span>`).join('') || (bekliyor ? '<span class="mzar bos">…</span>' : '');
       const al = aldigi[no] ? E.al(aldigi[no]) : null;
       const kusam = d.kusam[no] || {};
-      const ust = E.YUVALAR.map(y => kusam[y] ? E.al(kusam[y]).emoji : '').join('');
+      const ust = E.YUVALAR.map(y => kusam[y] ? `<span data-ipucu="${kacis(esyaIpucu(E.al(kusam[y])))}">${E.al(kusam[y]).emoji}</span>` : '').join('');
       const dusunuyor = (d.kararlar?.[no] || []).length && !oyun.giyinecek?.has(no);
       return `<div class="spSatir${no === siradaki ? ' siradaki' : ''}${no === bn ? ' ben' : ''}" style="--r:${renkCss(no)}">
         <span class="spNo">${siraNo[no] || ''}</span><div class="spOrta"><div class="spAd">${kacis(oyuncu(no).ad)}${no === bn ? ' ⭐' : ''}${bekliyor ? ' <i>atıyor…</i>' : ''}</div>
@@ -378,8 +446,8 @@ const Oyun = (() => {
     oyun.oncekiKusam = k;
     const st = E.statlar(k);
     requestAnimationFrame(() => { const h = $('kusamim').offsetHeight; if (h) document.documentElement.style.setProperty('--altPay', (h + 14) + 'px'); });
-    $('kusamim').innerHTML = E.YUVALAR.map(y => { const x = E.al(k[y]); return `<div class="yuvaKutu${x ? '' : ' bos'}"><b>${x ? x.emoji : E.YUVA_EMOJI[y]}</b>${x ? kacis(x.ad) : E.YUVA_AD[y] + ' boş'}</div>`; }).join('')
-      + `<div class="statYazi">❤️ ${st.canMax} · 🪨 %${Math.round(st.zirh * 100)} · 💨 ${st.hiz >= 0 ? '+' : ''}${Math.round(st.hiz * 100)}% · ${st.silah.emoji} ${st.silah.hasar}</div>`;
+    $('kusamim').innerHTML = E.YUVALAR.map(y => { const x = E.al(k[y]); return `<div class="yuvaKutu${x ? '' : ' bos'}"${x ? ` data-ipucu="${kacis(esyaIpucu(x))}"` : ''}><b>${x ? x.emoji : E.YUVA_EMOJI[y]}</b>${x ? kacis(x.ad) : E.YUVA_AD[y] + ' boş'}</div>`; }).join('')
+      + `<div class="statYazi" data-ipucu="${kacis(`<b>📊 Toplam gücün</b>\n❤️ ${st.canMax} can (donla ${E.CAN_TEMEL})\n🪨 %${Math.round(st.zirh * 100)} zırh: gelen hasarı azaltır\n💨 ${st.hiz >= 0 ? '+' : ''}${Math.round(st.hiz * 100)}% hız\n${st.silah.emoji} ${kacis(st.silah.ad)}: ${st.silah.hasar} hasar\n🛡️ Blok %${Math.round(st.blok * 100)}${st.kalkan ? '' : ' (kalkansız, kollarla)'}`)}">❤️ ${st.canMax} · 🪨 %${Math.round(st.zirh * 100)} · 💨 ${st.hiz >= 0 ? '+' : ''}${Math.round(st.hiz * 100)}% · ${st.silah.emoji} ${st.silah.hasar}</div>`;
   }
   function ozellikYazi(x) {
     const p = [];

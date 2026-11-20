@@ -111,6 +111,14 @@ const Insan = (() => {
   function kafaYap(x) {
     const r = x.renk, g = new THREE.Group();
     switch (x.sekil) {
+      case 'pasta': g.add(silindir(0.2, 0.2, 0.1, r, 0, 0.21, 0)); g.add(silindir(0.205, 0.205, 0.025, 0xff5ab0, 0, 0.17, 0)); g.add(silindir(0.15, 0.15, 0.08, 0xff8ab8, 0, 0.3, 0)); [0x3a9ae8, 0xffe040, 0x5ad85a].forEach((c, i) => { const a = -0.06 + i * 0.06; g.add(silindir(0.012, 0.012, 0.08, c, a, 0.38, 0)); g.add(kure(0.016, 0xffa020, a, 0.43, 0, { isik: true })); }); break;
+      case 'saksi': g.add(silindir(0.2, 0.15, 0.2, r, 0, 0.25, 0, {}, 12)); g.add(silindir(0.21, 0.21, 0.04, r, 0, 0.35, 0, {}, 12)); g.add(silindir(0.18, 0.18, 0.012, 0x4a2a14, 0, 0.365, 0)); g.add(silindir(0.012, 0.012, 0.18, 0x3a9a2a, 0, 0.45, 0)); g.add(kure(0.05, 0xffe040, 0, 0.56, 0)); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; g.add(kure(0.045, 0xff5ab0, Math.sin(a) * 0.08, 0.56, Math.cos(a) * 0.08, {}, 1, 0.6, 1)); } break;
+      case 'karpuz': g.add(kure(0.2, r, 0, 0.1, 0, {}, 1, 0.75, 1)); g.add(silindir(0.205, 0.205, 0.03, 0xff4a5a, 0, 0.07, 0)); g.add(silindir(0.21, 0.21, 0.015, 0xf4f4e0, 0, 0.05, 0)); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2, c = kutu(0.03, 0.14, 0.03, 0x1a5a2a, Math.sin(a) * 0.17, 0.16, Math.cos(a) * 0.17); c.rotation.y = a; c.rotation.x = 0.5 * Math.cos(a); c.rotation.z = -0.5 * Math.sin(a); g.add(c); } break;
+      case 'pervane': g.add(kure(0.17, r, 0, 0.13, 0, {}, 1, 0.55, 1)); g.add(kutu(0.2, 0.025, 0.1, 0xffe040, 0, 0.12, 0.19)); g.add(silindir(0.012, 0.012, 0.1, 0x222222, 0, 0.26, 0)); { const p = new THREE.Group(); p.position.y = 0.31; p.add(kutu(0.38, 0.012, 0.05, 0xd8202a)); p.add(kutu(0.05, 0.012, 0.38, 0x3a9a2a)); g.add(p); g.userData.pervane = p; } break;
+      case 'balkabagi': g.add(kure(0.26, r, 0, 0.02, 0, {}, 1.05, 0.9, 1.05)); [-1, 1].forEach(s => g.add(kutu(0.07, 0.06, 0.02, 0xffc030, 0.08 * s, 0.06, 0.24, { isik: true }))); g.add(kutu(0.16, 0.04, 0.02, 0xffc030, 0, -0.07, 0.24, { isik: true })); g.add(silindir(0.03, 0.04, 0.08, 0x3a5a1a, 0, 0.26, 0)); break;
+      case 'unicorn': g.add(kutu(0.31, 0.05, 0.31, r, 0, 0.11, 0)); { const b = silindir(0.001, 0.045, 0.28, 0xffcc22, 0, 0.3, 0.06, { metal: true }, 8); b.rotation.x = 0.35; g.add(b); } [-1, 1].forEach(s => g.add(kutu(0.04, 0.08, 0.03, r, 0.12 * s, 0.2, 0))); [0xff5ab0, 0x8ab4ff, 0xffe040].forEach((c, i) => g.add(kutu(0.06, 0.2, 0.04, c, -0.06 + i * 0.06, 0.06, -0.17))); break;
+      case 'astronot': g.add(kure(0.27, 0xbfe8ff, 0, 0.0, 0, { saydam: 0.3, puruz: 0.05 })); g.add(silindir(0.2, 0.22, 0.08, r, 0, -0.24, 0)); g.add(kutu(0.05, 0.05, 0.02, 0xd8202a, 0.12, -0.24, 0.2)); break;
+      case 'samuray': g.add(kure(0.19, r, 0, 0.08, -0.01, {}, 1, 0.85, 1.05)); [-1, 1].forEach(s => g.add(kutu(0.04, 0.18, 0.26, r, 0.18 * s, -0.04, -0.02))); g.add(kutu(0.34, 0.18, 0.04, r, 0, -0.04, -0.17)); [-1, 1].forEach(s => { const b = kutu(0.03, 0.22, 0.02, 0xffcc22, 0.08 * s, 0.3, 0.16, { metal: true }); b.rotation.z = -0.5 * s; g.add(b); }); g.add(kure(0.03, 0xd8202a, 0, 0.2, 0.18)); break;
       case 'koni': g.add(silindir(0.001, 0.12, 0.3, r, 0, 0.3, 0)); g.add(kure(0.035, 0xffee55, 0, 0.46, 0)); [0.22, 0.3].forEach(y => g.add(silindir(0.09 - (y - 0.22), 0.1 - (y - 0.22), 0.02, 0xffee55, 0, y, 0))); break;
       case 'asci': g.add(silindir(0.17, 0.16, 0.12, r, 0, 0.21, 0)); g.add(kure(0.2, r, 0, 0.36, 0, {}, 1, 0.7, 1)); break;
       case 'tavuk': g.add(kutu(0.36, 0.38, 0.36, r, 0, 0.02, 0)); g.add(kutu(0.04, 0.12, 0.16, 0xe8202a, 0, 0.26, 0.02)); g.add(kutu(0.1, 0.06, 0.12, 0xffa020, 0, 0, 0.23)); g.add(kutu(0.06, 0.08, 0.03, 0xe8202a, 0, -0.08, 0.2)); [-1, 1].forEach(s => g.add(kutu(0.05, 0.05, 0.02, 0x111111, 0.09 * s, 0.07, 0.185))); break;
@@ -136,6 +144,12 @@ const Insan = (() => {
     });
     const ana = (renk = r) => { g.add(kutu(0.53, 0.38, 0.3, renk, 0, 1.38, 0)); g.add(kutu(0.46, 0.36, 0.28, renk, 0, 1.06, 0)); };
     switch (x.sekil) {
+      case 'poset': kol(false); g.add(kure(0.36, r, 0, 1.22, 0, { puruz: 0.25 }, 0.95, 1.15, 0.7)); g.add(kutu(0.12, 0.08, 0.06, 0xffe040, 0, 1.62, 0.05)); break;
+      case 'simit': { const t = new THREE.Mesh(G('tSimit', () => new THREE.TorusGeometry(0.38, 0.12, 10, 20)), M(r)); t.rotation.x = Math.PI / 2; t.position.y = 0.98; g.add(t); g.add(kure(0.12, r, 0, 1.15, 0.42)); g.add(kutu(0.1, 0.04, 0.09, 0xffa020, 0, 1.12, 0.55)); [-1, 1].forEach(s => g.add(kure(0.02, 0x111111, 0.06 * s, 1.19, 0.52))); break; }
+      case 'muz': g.add(kure(0.4, r, 0, 1.25, 0, {}, 0.85, 1.35, 0.6)); [-1, 1].forEach(s => { const f = kutu(0.14, 0.42, 0.04, r, 0.3 * s, 0.82, 0.12); f.rotation.z = 0.45 * s; g.add(f); }); [[0.1, 1.3], [-0.12, 1.1], [0.05, 0.95], [-0.05, 1.45]].forEach(([a, b]) => g.add(kure(0.03, 0x6a4a1a, a, b, 0.23))); break;
+      case 'kaktus': ana(); kol(true); for (let i = 0; i < 16; i++) { const a = (i * 0.618) % 1, b = (i * 0.37) % 1; g.add(kutu(0.015, 0.015, 0.07, 0xf4f0c0, -0.2 + a * 0.4, 0.95 + b * 0.55, 0.17)); } g.add(kure(0.06, 0xff5ab0, 0.16, 1.6, 0.1)); break;
+      case 'pelerin': ana(0x3a5ad8); kol(true, 0x3a5ad8); { const p = kutu(0.6, 0.95, 0.03, r, 0, 1.08, -0.19); p.rotation.x = 0.12; g.add(p); } g.add(kutu(0.16, 0.13, 0.01, 0xffe040, 0, 1.4, 0.155)); g.add(kutu(0.08, 0.06, 0.012, r, 0, 1.4, 0.158)); break;
+      case 'uzay': ana(); kol(true); g.add(kutu(0.42, 0.5, 0.18, 0xd8dee6, 0, 1.25, -0.24)); g.add(kutu(0.18, 0.12, 0.01, 0x3a5ad8, 0, 1.38, 0.152)); g.add(kure(0.02, 0xd8202a, 0.04, 1.36, 0.16, { isik: true })); g.add(kure(0.02, 0x2ad85a, -0.03, 1.36, 0.16, { isik: true })); g.add(kutu(0.54, 0.06, 0.31, 0x8a929c, 0, 0.94, 0)); break;
       case 'kutu': g.add(kutu(0.66, 0.66, 0.44, r, 0, 1.2, 0, { metal: false })); g.add(kutu(0.67, 0.03, 0.03, 0xb08a4a, 0, 1.5, 0.21)); g.add(kutu(0.2, 0.08, 0.005, 0x222222, -0.15, 1.3, 0.222, { saydam: 0.5 })); break;
       case 'atlet': g.add(kutu(0.44, 0.34, 0.26, r, 0, 1.36, 0)); g.add(kutu(0.43, 0.34, 0.26, r, 0, 1.06, 0)); break;
       case 'tisort': ana(); kol(false); if (r === 0xff8a3a) [[-0.12, 1.4], [0.1, 1.2], [-0.05, 1.05], [0.15, 1.42]].forEach(([a, b]) => g.add(kutu(0.07, 0.07, 0.005, 0xffe040, a, b, 0.152))); break;
@@ -167,6 +181,8 @@ const Insan = (() => {
     const bel = () => { g.add(kutu(0.47, 0.22, 0.29, r, 0, 0.9, 0)); g.add(kutu(0.48, 0.04, 0.295, 0x2a1a0a, 0, 0.99, 0, { metal: false })); g.add(kutu(0.06, 0.04, 0.01, 0xc8a030, 0, 0.99, 0.15)); };
     switch (x.sekil) {
       case 'pantolon': bacaga(true); bel(); break;
+      case 'kuyruk': bel(); g.add(silindir(0.24, 0.12, 0.75, r, 0, 0.5, 0, {}, 12)); [0.75, 0.55, 0.35].forEach(y => g.add(silindir(0.245 - (0.75 - y) * 0.16, 0.24 - (0.75 - y) * 0.16, 0.03, 0x1a8a7a, 0, y, 0, {}, 12))); [-1, 1].forEach(s => { const f = kutu(0.26, 0.03, 0.2, r, 0.13 * s, 0.1, 0.05); f.rotation.z = 0.4 * s; g.add(f); }); break;
+      case 'palyaco': bacaga(true); bel(); g.add(silindir(0.42, 0.42, 0.06, 0xd8202a, 0, 0.95, 0, {}, 18)); [-1, 1].forEach(s => g.add(kutu(0.05, 0.62, 0.02, 0xd8202a, 0.12 * s, 1.25, 0.16))); [[0.1, 0.85], [-0.12, 0.8]].forEach(([a, b]) => g.add(kure(0.035, 0x3a7ad8, a, b, 0.15))); break;
       case 'sort': bacaga(false); bel(); break;
       case 'etek': g.add(silindir(0.25, 0.33, 0.44, r, 0, 0.74, 0, {}, 12)); for (let i = 0; i < 3; i++) g.add(silindir(0.255 + i * 0.03, 0.27 + i * 0.03, 0.02, 0xd8302a, 0, 0.88 - i * 0.12, 0, {}, 12)); g.add(kutu(0.1, 0.12, 0.02, 0xd8d8d8, 0, 0.82, 0.29)); break;
       case 'tutu': bel(); g.add(silindir(0.44, 0.44, 0.05, r, 0, 0.86, 0, {}, 20)); g.add(silindir(0.38, 0.38, 0.05, 0xffd0ea, 0, 0.82, 0, {}, 20)); break;
@@ -177,6 +193,11 @@ const Insan = (() => {
   function ayakkabi(x, a) {
     const r = x.renk, g = new THREE.Group(); a.add(g);
     switch (x.sekil) {
+      case 'takunya': g.add(kutu(0.17, 0.04, 0.28, r, 0, -0.03, 0.03)); [0.11, -0.05].forEach(z => g.add(kutu(0.15, 0.08, 0.06, 0x6a4a1a, 0, -0.09, z))); g.add(kutu(0.17, 0.03, 0.05, 0xd8202a, 0, 0.0, 0.08)); break;
+      case 'kayak': g.add(kutu(0.12, 0.02, 0.9, r, 0, -0.06, 0.12)); { const u = kutu(0.12, 0.02, 0.12, r, 0, -0.03, 0.6); u.rotation.x = -0.5; g.add(u); } g.add(kutu(0.17, 0.12, 0.24, 0x222222, 0, 0, 0.0)); break;
+      case 'ugur': g.add(kure(0.12, r, 0, 0.0, 0.05, {}, 1, 0.7, 1.3)); [[0.05, 0.1], [-0.05, 0.0], [0.04, -0.05], [-0.04, 0.12]].forEach(([a, b]) => g.add(kure(0.022, 0x111111, a, 0.07, b + 0.02))); g.add(kure(0.05, 0x111111, 0, 0.0, 0.2)); break;
+      case 'yayli': g.add(kutu(0.17, 0.1, 0.28, r, 0, 0.0, 0.03)); for (let i = 0; i < 4; i++) g.add(silindir(0.06, 0.06, 0.02, 0xc8ced6, 0, -0.07 - i * 0.035, 0.03, { metal: true })); g.add(kutu(0.17, 0.02, 0.2, 0x222222, 0, -0.21, 0.03)); break;
+      case 'roket': g.add(kutu(0.17, 0.1, 0.28, r, 0, 0, 0.03, { metal: true })); { const c = silindir(0.06, 0.06, 0.18, 0xd8202a, 0, 0.04, -0.17); c.rotation.x = Math.PI / 2; g.add(c); } g.add(kure(0.06, 0xffa21a, 0, 0.04, -0.29, { isik: true }, 1, 1, 1.6)); [-1, 1].forEach(s => g.add(kutu(0.01, 0.08, 0.08, 0xd8202a, 0.06 * s, 0.08, -0.15))); break;
       case 'terlik': g.add(kutu(0.17, 0.035, 0.29, r, 0, -0.045, 0.03)); g.add(kutu(0.17, 0.04, 0.06, r, 0, -0.015, 0.08)); break;
       case 'palet': g.add(kutu(0.24, 0.025, 0.58, r, 0, -0.045, 0.18)); g.add(kutu(0.17, 0.07, 0.15, 0x222222, 0, -0.01, 0.0)); break;
       case 'topuk': g.add(kutu(0.16, 0.07, 0.26, r, 0, 0.0, 0.04, { puruz: 0.2 })); g.add(silindir(0.02, 0.012, 0.12, r, 0, -0.08, -0.08)); break;
@@ -193,6 +214,14 @@ const Insan = (() => {
   function silahYap(x) {
     const r = x.renk, g = new THREE.Group(), sap = 0x5a3416;
     switch (x.sekil) {
+      case 'lastik': g.add(kure(0.1, r, 0, 0.25, 0, {}, 0.8, 1.6, 0.8)); g.add(silindir(0.03, 0.03, 0.14, r, 0, 0.42, 0)); g.add(kure(0.07, r, 0, 0.5, 0.02)); g.add(kutu(0.04, 0.03, 0.07, 0xffa020, 0, 0.49, 0.09)); g.add(kutu(0.02, 0.07, 0.07, 0xd8202a, 0, 0.58, 0)); [-1, 1].forEach(s => g.add(kutu(0.02, 0.1, 0.02, 0xffa020, 0.03 * s, 0.05, 0))); break;
+      case 'oyuncak': g.add(silindir(0.035, 0.035, 0.55, 0xffe040, 0, 0.2, 0)); { const h = silindir(0.13, 0.13, 0.36, r, 0, 0.55, 0); h.rotation.z = Math.PI / 2; g.add(h); [-1, 1].forEach(s => { const c = silindir(0.135, 0.135, 0.03, 0x3a7ad8, 0.18 * s, 0.55, 0); c.rotation.z = Math.PI / 2; g.add(c); }); } break;
+      case 'su': g.add(kutu(0.06, 0.06, 0.16, r, 0, 0.02, -0.03)); g.add(kutu(0.08, 0.32, 0.1, r, 0, 0.18, 0.06)); g.add(kure(0.08, 0xffe040, 0, 0.12, 0.16)); g.add(silindir(0.02, 0.02, 0.07, 0xff5ab0, 0, 0.37, 0.06)); break;
+      case 'terlikS': g.add(kutu(0.12, 0.28, 0.025, r, 0, 0.15, 0)); g.add(kutu(0.13, 0.06, 0.05, r, 0, 0.22, 0.02)); break;
+      case 'kurek': g.add(silindir(0.022, 0.022, 1.1, 0x8a5a2a, 0, 0.45, 0)); g.add(kutu(0.26, 0.32, 0.02, 0x6a6f78, 0, 1.12, 0, { metal: true })); g.add(kutu(0.14, 0.03, 0.03, 0x222222, 0, -0.1, 0)); break;
+      case 'gitar': g.add(kutu(0.06, 0.6, 0.03, 0x5a3416, 0, 0.25, 0)); g.add(kutu(0.08, 0.12, 0.03, 0x222222, 0, -0.08, 0)); g.add(kure(0.2, r, 0, 0.75, 0, {}, 1, 1.25, 0.35)); g.add(kure(0.15, r, 0, 1.0, 0, {}, 1, 1, 0.35)); g.add(kutu(0.12, 0.16, 0.01, 0xf4f4f4, 0, 0.78, 0.07)); break;
+      case 'katana': g.add(silindir(0.022, 0.022, 0.28, 0x222222, 0, 0.04, 0)); g.add(silindir(0.06, 0.06, 0.02, 0xc8a030, 0, 0.19, 0)); g.add(kutu(0.045, 0.95, 0.012, r, 0, 0.68, 0, { metal: true })); g.add(silindir(0.001, 0.03, 0.08, r, 0, 1.19, 0, {}, 4)); break;
+      case 'tirpan': g.add(silindir(0.024, 0.024, 1.5, 0x6a4a24, 0, 0.6, 0)); { const b = kutu(0.6, 0.08, 0.015, r, 0.28, 1.32, 0, { metal: true }); b.rotation.z = -0.25; g.add(b); } break;
       case 'tuy': g.add(silindir(0.018, 0.018, 0.5, 0x3a2414, 0, 0.2, 0)); for (let i = 0; i < 8; i++) { const t = kure(0.07, r, Math.sin(i) * 0.06, 0.48 + (i % 4) * 0.05, Math.cos(i) * 0.06, { metal: false }, 0.7, 1.6, 0.7); g.add(t); } break;
       case 'balik': g.add(kure(0.12, r, 0, 0.36, 0, {}, 0.55, 2.2, 1)); { const k = kutu(0.02, 0.16, 0.2, r, 0, 0.06, 0); g.add(k); } [-1, 1].forEach(s => g.add(kure(0.022, 0xffffff, 0.05 * s, 0.56, 0.06, { metal: false }))); g.add(kutu(0.01, 0.12, 0.1, 0x6a94a8, 0, 0.38, 0.11)); break;
       case 'supurge': g.add(silindir(0.022, 0.022, 1.3, 0xc8945a, 0, 0.45, 0)); g.add(kutu(0.1, 0.06, 0.1, 0xd8302a, 0, 1.08, 0)); g.add(silindir(0.06, 0.2, 0.36, 0xe0c050, 0, 1.28, 0, {}, 10)); break;
@@ -218,6 +247,11 @@ const Insan = (() => {
   function kalkanYap(x) {
     const r = x.renk, g = new THREE.Group();
     switch (x.sekil) {
+      case 'yastik': g.add(kutu(0.5, 0.12, 0.38, r, 0, -0.1, 0, { puruz: 0.95 })); g.add(kutu(0.5, 0.122, 0.03, 0x8ab4ff, 0, -0.1, 0.08)); break;
+      case 'karpuzK': g.add(silindir(0.32, 0.32, 0.05, r, 0, -0.06, 0, {}, 24)); g.add(silindir(0.31, 0.31, 0.02, 0xf4f4e0, 0, -0.09, 0, {}, 24)); g.add(silindir(0.29, 0.29, 0.022, 0xff4a5a, 0, -0.095, 0, {}, 24)); [[0.1, 0.05], [-0.08, 0.12], [0.02, -0.12], [-0.12, -0.04], [0.14, -0.1]].forEach(([a, b]) => g.add(kutu(0.02, 0.01, 0.035, 0x111111, a, -0.108, b))); break;
+      case 'tabela': g.add(silindir(0.3, 0.3, 0.04, 0xffffff, 0, -0.08, 0, {}, 8)); g.add(silindir(0.27, 0.27, 0.044, r, 0, -0.08, 0, {}, 8)); g.add(kutu(0.3, 0.046, 0.07, 0xffffff, 0, -0.08, 0)); { const c = silindir(0.02, 0.02, 0.5, 0x9aa4ae, 0, -0.04, -0.5); c.rotation.x = Math.PI / 2; g.add(c); } break;
+      case 'sorf': g.add(kure(0.35, r, 0, -0.08, 0.15, {}, 0.6, 0.08, 1.6)); g.add(kutu(0.04, 0.06, 0.9, 0xffffff, 0, -0.08, 0.15)); break;
+      case 'kabuk': g.add(kure(0.36, r, 0, -0.04, 0, {}, 1, 0.35, 1.1)); g.add(silindir(0.36, 0.36, 0.03, 0xc8a050, 0, -0.03, 0)); [[0, 0], [0.16, 0.1], [-0.16, 0.1], [0.16, -0.12], [-0.16, -0.12], [0, 0.22], [0, -0.22]].forEach(([a, b]) => g.add(kure(0.08, 0x6a9a3a, a, -0.12 + Math.hypot(a, b) * 0.15, b, {}, 1, 0.3, 1))); break;
       case 'kutuK': g.add(kutu(0.45, 0.05, 0.45, r, 0, -0.08, 0, { metal: false })); g.add(kutu(0.25, 0.052, 0.08, 0xd8302a, 0, -0.08, 0.1)); g.add(kure(0.03, 0xd8302a, -0.1, -0.11, -0.08)); break;
       case 'yuvarlak': {
         const ayna = r === 0xe0f4ff;
@@ -260,7 +294,7 @@ const Insan = (() => {
     ud.saldiriTur = s ? s.tur : 'yakin';
     ud.kalkanVar = !!kusam?.kalkan;
     const g = kusam?.govde ? E.al(kusam.govde).sekil : null;
-    if (ud.ciplak) ud.ciplak.visible = !g || g === 'yelek';
+    if (ud.ciplak) ud.ciplak.visible = !g || g === 'yelek' || g === 'simit';
     ud.bacak.forEach(b => { b.userData.ayak.userData.cip.visible = !kusam?.ayak; });
   }
 

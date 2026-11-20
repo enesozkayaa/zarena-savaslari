@@ -211,3 +211,25 @@ body.dokun #ipucu { display: none; }
 #kararKutu { max-height: calc(100% - 20px); overflow-y: auto; }
 @media (max-height: 480px) { #puanTablo { max-height: 38vh; overflow: hidden; font-size: 11px; } #akis { width: 40vw; } }
 @media (max-width: 640px) { #silahYazi { display: none; } }
+
+/* Sürüm 7: eşya seçme penceresi ve eşya açıklama kutusu */
+#esyaAyar { border: 2px solid #0002; border-radius: 10px; padding: 6px 10px 8px; margin: 0; }
+#esyaAyar legend { font-weight: 900; padding: 0 4px; }
+#esyaAyar .satir { align-items: center; }
+#esyaSayi { font-weight: 800; }
+#esyaPencere { position: fixed; inset: 0; z-index: 40; background: #000a; display: flex; align-items: center; justify-content: center; padding: 10px; }
+#esyaPencere .kart { width: min(760px, 100%); max-height: calc(100% - 10px); overflow-y: auto; }
+.esyaDugmeler { display: flex; flex-wrap: wrap; gap: 6px; }
+.esyaDugmeler button { flex: 1 1 auto; }
+.yuvaGrup h3 { margin: 6px 0 4px; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
+.yuvaGrup h3 button { font-size: 12px; padding: 3px 8px; }
+.esyaCipler { display: flex; flex-wrap: wrap; gap: 5px; }
+.esyaCip { box-shadow: none; padding: 4px 8px; border-radius: 8px; font-size: 13px; border: 2px solid #2a8a3a; background: #e6f6e4; color: #2a1a0a; }
+.esyaCip small { opacity: .65; margin-left: 3px; }
+.esyaCip.kapali { opacity: .45; border-color: #999; background: #ddd; text-decoration: line-through; }
+.esyaCip.kotu { border-style: dashed; }
+#esyaPencere.izle .esyaCip, #esyaPencere.izle .esyaDugmeler, #esyaPencere.izle .yuvaGrup h3 button { pointer-events: none; }
+#esyaPencere.izle .esyaCip { pointer-events: auto; cursor: help; }
+#ipucuKutu { position: fixed; z-index: 60; pointer-events: none; background: #1a0e06f0; color: #fff; border: 2px solid #ffd36a; border-radius: 10px; padding: 7px 10px; font-size: 13px; font-weight: 700; line-height: 1.45; max-width: 260px; white-space: pre-line; box-shadow: 0 6px 20px #0008; }
+#ipucuKutu b { color: #ffd36a; font-size: 14px; }
+.yuvaKutu[data-ipucu], .ust [data-ipucu] { cursor: help; }

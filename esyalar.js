@@ -103,6 +103,54 @@ const Esya = (() => {
   e('kalkan', 'demir', 'Demir kalkan', '🛡️', 8, { blok: 0.75, can: 10, hiz: -0.03 }, 'kule', 0xa8aeb6);
   e('kalkan', 'ayna', 'Ayna kalkan', '🪞', 9, { blok: 0.65, yansit: true }, 'yuvarlak', 0xe0f4ff);
 
+  // ---------- KOMİK EKLER (sürüm 7) ----------
+  e('kafa', 'pasta', 'Doğum günü pastası', '🎂', 1, { can: 1, hiz: -0.04 }, 'pasta', 0xfff0f4);
+  e('kafa', 'saksi', 'Çiçek saksısı', '🪴', 2, { can: 6, zirh: 0.03 }, 'saksi', 0xc0602a);
+  e('kafa', 'karpuz', 'Karpuz kabuğu', '🍉', 2, { can: 7, zirh: 0.02 }, 'karpuz', 0x2a8a3a);
+  e('kafa', 'pervane', 'Pervaneli şapka', '🧢', 3, { can: 3, hiz: 0.1 }, 'pervane', 0x3a7ad8);
+  e('kafa', 'balkabagi', 'Balkabağı', '🎃', 3, { can: 12, zirh: 0.03, hiz: -0.04 }, 'balkabagi', 0xff8a1a);
+  e('kafa', 'unicorn', 'Tek boynuz', '🦄', 5, { can: 8, hiz: 0.07 }, 'unicorn', 0xffffff);
+  e('kafa', 'astronot', 'Astronot kaskı', '🧑‍🚀', 8, { can: 24, zirh: 0.12 }, 'astronot', 0xf4f4f4);
+  e('kafa', 'samuray', 'Samuray miğferi', '🏯', 9, { can: 26, zirh: 0.15, hiz: 0.02 }, 'samuray', 0x2a2a2a);
+
+  e('govde', 'poset', 'Çöp poşeti', '🗑️', 1, { can: 5 }, 'poset', 0x222222);
+  e('govde', 'simit', 'Ördekli deniz simidi', '🦆', 2, { can: 8, hiz: 0.04 }, 'simit', 0xffd23a);
+  e('govde', 'muz', 'Muz kostümü', '🍌', 3, { can: 15 }, 'muz', 0xffe040);
+  e('govde', 'kaktus', 'Kaktüs kostümü', '🌵', 5, { can: 28, zirh: 0.06 }, 'kaktus', 0x3a9a3a);
+  e('govde', 'pelerin', 'Süper kahraman pelerini', '🦸', 6, { can: 22, hiz: 0.1 }, 'pelerin', 0xd8202a);
+  e('govde', 'uzay', 'Uzay giysisi', '🚀', 8, { can: 58, zirh: 0.14, hiz: -0.05 }, 'uzay', 0xf0f0f0);
+  e('govde', 'altin', 'Altın zırh', '🏆', 10, { can: 72, zirh: 0.2, hiz: -0.02 }, 'plaka', 0xffcc22);
+
+  e('bacak', 'don', 'Kalpli boxer', '🩲', 1, { can: 1, hiz: 0.02 }, 'sort', 0xff5a8a);
+  e('bacak', 'kuyruk', 'Deniz kızı kuyruğu', '🧜', 1, { can: 14, hiz: -0.2 }, 'kuyruk', 0x2ab4a0);
+  e('bacak', 'palyaco', 'Palyaço pantolonu', '🤡', 2, { can: 10, hiz: -0.02 }, 'palyaco', 0xffd23a);
+  e('bacak', 'tayt', 'Simli tayt', '✨', 3, { can: 8, hiz: 0.08 }, 'pantolon', 0xc040e0);
+  e('bacak', 'samuray', 'Samuray eteği', '🏯', 7, { can: 26, zirh: 0.05, hiz: 0.03 }, 'etek', 0x2a2a2a);
+  e('bacak', 'robot', 'Robot bacaklar', '🤖', 9, { can: 36, zirh: 0.08, hiz: 0.08 }, 'pantolon', 0x7a8a9a);
+
+  e('ayak', 'karpuz', 'Karpuz terlik', '🍉', 1, { can: 1, hiz: -0.08 }, 'terlik', 0x2a8a3a);
+  e('ayak', 'takunya', 'Hamam takunyası', '🛁', 2, { can: 4, hiz: -0.04 }, 'takunya', 0xa8743a);
+  e('ayak', 'kayak', 'Kayak', '🎿', 2, { can: 5, hiz: -0.12 }, 'kayak', 0xd8202a);
+  e('ayak', 'ugur', 'Uğur böceği patik', '🐞', 3, { can: 7, hiz: 0.02 }, 'ugur', 0xd8202a);
+  e('ayak', 'yayli', 'Yaylı ayakkabı', '🦘', 6, { can: 4, hiz: 0.2 }, 'yayli', 0x3ab4e8);
+  e('ayak', 'roket', 'Roket ayakkabı', '🚀', 10, { can: 6, hiz: 0.35 }, 'roket', 0xc8ced6);
+
+  e('silah', 'lastik', 'Lastik tavuk', '🐓', 1, { hasar: 3, menzil: 1.6, bekleme: 0.35, itme: 2, tur: 'yakin' }, 'lastik', 0xffe040);
+  e('silah', 'oyuncak', 'Oyuncak çekiç', '🪀', 2, { hasar: 2, menzil: 1.8, bekleme: 0.5, itme: 16, tur: 'yakin' }, 'oyuncak', 0xff3a3a);
+  e('silah', 'su', 'Su tabancası', '🔫', 2, { hasar: 2, menzil: 9, bekleme: 0.2, itme: 1, tur: 'atis', mermi: 'su', mhiz: 15 }, 'su', 0x3a9ae8);
+  e('silah', 'kurek', 'Kürek', '⛏️', 4, { hasar: 12, menzil: 2.2, bekleme: 0.65, itme: 9, tur: 'yakin' }, 'kurek', 0x8a5a2a);
+  e('silah', 'terlik', 'Anne terliği', '🩴', 5, { hasar: 11, menzil: 12, bekleme: 0.7, itme: 6, tur: 'atis', mermi: 'terlik', mhiz: 17 }, 'terlikS', 0x3ab4e8);
+  e('silah', 'gitar', 'Elektro gitar', '🎸', 6, { hasar: 20, menzil: 1.9, bekleme: 0.85, itme: 10, tur: 'yakin' }, 'gitar', 0xd8202a);
+  e('silah', 'tirpan', 'Tırpan', '💀', 8, { hasar: 26, menzil: 2.6, bekleme: 0.95, itme: 6, tur: 'yakin' }, 'tirpan', 0x9aa0a8);
+  e('silah', 'katana', 'Katana', '🗾', 9, { hasar: 22, menzil: 2.1, bekleme: 0.45, itme: 3, tur: 'yakin' }, 'katana', 0xe8ecf0);
+
+  e('kalkan', 'yastik', 'Yastık', '🛏️', 1, { blok: 0.22, can: 6 }, 'yastik', 0xf4f0ff);
+  e('kalkan', 'karpuz', 'Yarım karpuz', '🍉', 2, { blok: 0.3, can: 4 }, 'karpuzK', 0x2a8a3a);
+  e('kalkan', 'tabela', 'DUR tabelası', '🛑', 4, { blok: 0.5 }, 'tabela', 0xd8202a);
+  e('kalkan', 'sorf', 'Sörf tahtası', '🏄', 5, { blok: 0.62, hiz: -0.04 }, 'sorf', 0x3ab4e8);
+  e('kalkan', 'kabuk', 'Kaplumbağa kabuğu', '🐢', 6, { blok: 0.6, can: 10, hiz: -0.04 }, 'kabuk', 0x4a7a2a);
+  e('kalkan', 'altin', 'Altın kalkan', '🏆', 10, { blok: 0.82, can: 15 }, 'kule', 0xffcc22);
+
   const HARITA = Object.fromEntries(L.map(x => [x.id, x]));
   const YUMRUK = { id: 'yumruk', ad: 'Yumruk', emoji: '👊', hasar: 6, menzil: 1.3, bekleme: 0.45, itme: 2, tur: 'yakin', sekil: 'yok' };
   const CAN_TEMEL = 50;      // sadece donla savaşanın canı
@@ -120,14 +168,27 @@ const Esya = (() => {
   const turSayisi = (n, istek) => (istek >= 1 && istek <= 7 ? Math.round(istek) : (n >= 8 ? 4 : 5));
 
   // Eşya havuzunu karıştırıp tur başına n eşya ayırır (aynı seçimde aynı eşya iki kez çıkmaz)
-  function draftHazirla(n, rastgele = Math.random, istek) {
+  function draftHazirla(n, rastgele = Math.random, istek, kapali) {
     const T = turSayisi(n, istek);
-    const havuz = L.map(x => x.id);
-    for (let i = havuz.length - 1; i > 0; i--) { const j = Math.floor(rastgele() * (i + 1)); [havuz[i], havuz[j]] = [havuz[j], havuz[i]]; }
-    // Her turda iyi ve kötü karışık olsun: havuzu sırayla dağıt
+    const kapat = new Set(Array.isArray(kapali) ? kapali : []);
+    let havuz = L.map(x => x.id).filter(id => !kapat.has(id));
+    if (!havuz.length) havuz = L.map(x => x.id);           // hepsi kapalıysa hepsini kullan
+    const karistir = () => { for (let i = havuz.length - 1; i > 0; i--) { const j = Math.floor(rastgele() * (i + 1)); [havuz[i], havuz[j]] = [havuz[j], havuz[i]]; } };
+    karistir();
+    // Her turda iyi ve kötü karışık olsun: havuzu sırayla dağıt (biterse yeniden karıştır)
     const turlar = [];
     let k = 0;
-    for (let t = 0; t < T; t++) { const tur = []; for (let i = 0; i < n; i++) tur.push(havuz[k++ % havuz.length]); turlar.push(tur); }
+    for (let t = 0; t < T; t++) {
+      const tur = [];
+      let deneme = 0;
+      while (tur.length < n) {
+        if (k >= havuz.length) { karistir(); k = 0; }
+        const id = havuz[k++];
+        if (tur.includes(id) && havuz.length >= n && deneme++ < 500) continue;   // aynı turda iki kez çıkmasın
+        tur.push(id);
+      }
+      turlar.push(tur);
+    }
     return turlar;
   }
   // Kalan eşyalar arasında en kötüsü (süre bitince verilir)

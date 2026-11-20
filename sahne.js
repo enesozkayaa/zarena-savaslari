@@ -305,6 +305,11 @@ const Sahne = (() => {
     } else if (tur === 'ates') {
       g.add(new THREE.Mesh(PG('ates1', () => new THREE.SphereGeometry(0.22, 12, 8)), PM('ates1', () => new THREE.MeshBasicMaterial({ color: 0xffa21a }))));
       g.add(new THREE.Mesh(PG('ates2', () => new THREE.SphereGeometry(0.34, 12, 8)), PM('ates2', () => new THREE.MeshBasicMaterial({ color: 0xff4a1a, transparent: true, opacity: 0.4 }))));
+    } else if (tur === 'su') {
+      g.add(new THREE.Mesh(PG('su', () => new THREE.SphereGeometry(0.09, 8, 6)), PM('su', () => new THREE.MeshStandardMaterial({ color: 0x5ab4ff, transparent: true, opacity: 0.7, roughness: 0.1 }))));
+    } else if (tur === 'terlik') {
+      const t = new THREE.Mesh(PG('terlik', () => new THREE.BoxGeometry(0.14, 0.035, 0.3)), PM('terlik', () => new THREE.MeshStandardMaterial({ color: 0x3ab4e8 }))); t.rotation.z = 0.4; g.add(t);
+      g.userData.dondur = true;
     } else if (tur === 'domates') {
       g.add(new THREE.Mesh(PG('domates', () => new THREE.SphereGeometry(0.14, 10, 8)), PM('domates', () => new THREE.MeshStandardMaterial({ color: 0xe8302a, roughness: 0.4 }))));
       const s = new THREE.Mesh(PG('sap', () => new THREE.BoxGeometry(0.08, 0.04, 0.08)), PM('sap', () => new THREE.MeshStandardMaterial({ color: 0x3a9a2a }))); s.position.y = 0.13; g.add(s);
@@ -325,7 +330,7 @@ const Sahne = (() => {
     mermiMap.forEach((g, id) => { if (!var_.has(id)) { at(g); mermiMap.delete(id); } });
   }
   function mermiPatla(x, z, tur) {
-    const renk = tur === 'domates' ? 0xe8302a : tur === 'ates' ? 0xff8a1a : tur === 'ok' ? 0xc8a070 : 0x9a9a9a;
+    const renk = tur === 'domates' ? 0xe8302a : tur === 'ates' ? 0xff8a1a : tur === 'ok' ? 0xc8a070 : tur === 'su' ? 0x5ab4ff : tur === 'terlik' ? 0x3ab4e8 : 0x9a9a9a;
     partikul(x, 1.1, z, renk, tur === 'ates' ? 18 : 8, tur === 'ates' ? 4 : 2.5);
   }
 
