@@ -5,7 +5,7 @@
 // =============================================================
 
 const Oyun = (() => {
-  const SURUM = 7;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
+  const SURUM = 8;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
   const $ = id => document.getElementById(id);
   const E = Esya;
   Sahne.kur($('sahne'));
@@ -550,6 +550,28 @@ const Oyun = (() => {
       c.hx = x; c.hz = z; c.t = performance.now();
     });
   }
+  // Üstte: sıradaki oyuncu hangi eşyaya bakıyor
+  function seciyorCiz(simdi) {
+    const d = oyun.d, el = $('seciyorYazi');
+    const s = d && d.faz === 'secim' && d.sira ? d.sira[d.siraIdx] : -1;
+    let yazi = '';
+    if (s >= 0 && oyun.esyaCikti) {
+      const bn = benimNo(), ad = s === bn ? 'Sen' : kacis(oyuncu(s).ad);
+      let i = -1;
+      if (s === bn) i = oyun.uzerinde ?? -1;
+      else {
+        const c = oyun.imlec.get(s);
+        if (c && simdi - c.t < 2500) {
+          let en = 0.75;
+          d.esyalar.forEach((id, j) => { if (d.alinan[j] !== undefined) return; const y = Motor.esyaYeri(j, d.esyalar.length), u = Math.hypot(y.x - c.x, y.z - c.z); if (u < en) { en = u; i = j; } });
+        }
+      }
+      const x = i >= 0 && d.alinan[i] === undefined ? E.al(d.esyalar[i]) : null;
+      yazi = `<span style="--r:${renkCss(s)}">🎯 <b>${ad}</b> ${s === bn ? 'seçiyorsun' : 'seçiyor'}` + (x ? ` · 👀 <span class="esyaAd">${x.emoji} ${kacis(x.ad)}</span> <small>★${x.p}</small> ${s === bn ? 'eşyasına bakıyorsun' : 'eşyasına bakıyor'}` : ' <small>…düşünüyor</small>') + '</span>';
+      el.style.setProperty('--r', renkCss(s));
+    }
+    if (el.dataset.y !== yazi) { el.dataset.y = yazi; el.innerHTML = yazi; el.classList.toggle('gizli', !yazi); }
+  }
   function imlecleriCiz(dt, simdi) {
     oyun.imlec.forEach(c => {
       c.x += (c.hx - c.x) * Math.min(1, dt * 12); c.z += (c.hz - c.z) * Math.min(1, dt * 12);
@@ -915,7 +937,7 @@ const Oyun = (() => {
   function kare(dt, simdi = performance.now()) {
     if (oyun) {
       if (oyun.faz === 'draft' || oyun.faz === 'bitti') {
-        if (oyun.faz === 'draft') { sureCiz(); imlecleriCiz(dt, simdi); }
+        if (oyun.faz === 'draft') { sureCiz(); imlecleriCiz(dt, simdi); seciyorCiz(simdi); }
         Masa.guncelle(dt, masaSesleri);
         const d = oyun.d, siradaki = d && d.faz === 'secim' ? d.sira[d.siraIdx] : -1;
         oyun.k.forEach((v, no) => {

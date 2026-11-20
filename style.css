@@ -233,3 +233,10 @@ body.dokun #ipucu { display: none; }
 #ipucuKutu { position: fixed; z-index: 60; pointer-events: none; background: #1a0e06f0; color: #fff; border: 2px solid #ffd36a; border-radius: 10px; padding: 7px 10px; font-size: 13px; font-weight: 700; line-height: 1.45; max-width: 260px; white-space: pre-line; box-shadow: 0 6px 20px #0008; }
 #ipucuKutu b { color: #ffd36a; font-size: 14px; }
 .yuvaKutu[data-ipucu], .ust [data-ipucu] { cursor: help; }
+
+/* Sürüm 8: kim hangi eşyaya bakıyor */
+#seciyorYazi { margin-top: 4px; padding: 4px 10px; border-radius: 9px; background: #ffffff14; border: 2px solid var(--r, #ffd36a); font-weight: 900; font-size: 17px; }
+#seciyorYazi b { color: var(--r, #ffd36a); }
+#seciyorYazi .esyaAd { color: #ffd36a; }
+#seciyorYazi small { opacity: .75; font-weight: 800; }
+@media (max-width: 640px) { #seciyorYazi { font-size: 13px; padding: 3px 6px; } }
