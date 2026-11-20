@@ -242,3 +242,10 @@ body.dokun #ipucu { display: none; }
 @media (max-width: 640px) { #seciyorYazi { font-size: 13px; padding: 3px 6px; } }
 #esyaAcBtn { background: linear-gradient(#ffe7a0, #f0c060); }
 #esyaAcBtn small { display: block; font-size: 12px; opacity: .75; }
+
+/* Sürüm 10: oyun içi menü */
+#draftMenuBtn { position: absolute; right: max(10px, env(safe-area-inset-right)); top: max(10px, env(safe-area-inset-top)); padding: 7px 12px; font-size: 16px; background: #000a; color: #fff; box-shadow: none; }
+#oyunMenu { position: fixed; inset: 0; z-index: 45; background: #000a; display: flex; align-items: center; justify-content: center; padding: 16px; }
+#oyunMenu .kart { width: min(380px, 100%); }
+#oyunMenu h2 { margin: 0; text-align: center; }
+@media (max-width: 640px) { #draftMenuBtn { right: auto; left: max(8px, env(safe-area-inset-left)); top: calc(max(8px, env(safe-area-inset-top)) + 64px); padding: 4px 8px; font-size: 13px; } }

@@ -5,13 +5,14 @@
 // =============================================================
 
 const Oyun = (() => {
-  const SURUM = 9;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
+  const SURUM = 10;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
   const $ = id => document.getElementById(id);
   const E = Esya;
   Sahne.kur($('sahne'));
   const dokun = matchMedia('(pointer: coarse)').matches;
   if (dokun) document.body.classList.add('dokun');
   $('surumYazi').textContent = 'Sürüm ' + SURUM;
+  $('girisSurum').textContent = 'Sürüm ' + SURUM;
 
   const BOT_AD = ['Demir Bilek', 'Kel Hasan', 'Süpürgeci Sami', 'Tavacı Nuri', 'Dobra Dilek', 'Koca Yusuf', 'Fırtına Fatoş', 'Paspas Polat', 'Çılgın Cemile', 'Gürz Gürkan', 'Terlikli Tülay', 'Hızlı Hüsnü'];
   const kacis = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -212,7 +213,25 @@ const Oyun = (() => {
     else { oyunTemizle(); ekranGoster('lobi'); lobiCiz(); }
   };
   $('tekrarBtn').onclick = () => { if (yonetici()) baslat(); };
-  $('cikBtn').onclick = () => { if (confirm('Oyundan çıkılsın mı?')) menuyeDon(''); };
+  // ---------- Oyun içi menü ----------
+  function menuAc() {
+    if (!oyun) return;
+    if (document.pointerLockElement) document.exitPointerLock();
+    const ev = mod === 'ev' || mod === 'tek';
+    $('menuLobiBtn').classList.toggle('gizli', !ev);
+    $('menuYazi').textContent = mod === 'ev' ? 'Bekleme odasına götürürsen oyun herkes için biter, oda açık kalır. Ana sayfaya dönersen oda kapanır.'
+      : mod === 'misafir' || mod === 'katil' ? 'Ana sayfaya dönersen oyundan çıkarsın, yerine bot oynar.' : 'Bekleme odasında ayarları değiştirip yeniden başlatabilirsin.';
+    $('menuCikBtn').textContent = mod === 'ev' ? '🚪 Ana sayfaya dön (odayı kapat)' : '🚪 Ana sayfaya dön (oyundan çık)';
+    $('oyunMenu').classList.remove('gizli');
+  }
+  const menuKapat = () => $('oyunMenu').classList.add('gizli');
+  $('cikBtn').onclick = menuAc;
+  $('draftMenuBtn').onclick = menuAc;
+  $('menuDevamBtn').onclick = menuKapat;
+  $('menuLobiBtn').onclick = () => { menuKapat(); $('lobiyeBtn').onclick(); };
+  $('menuCikBtn').onclick = () => { menuKapat(); menuyeDon(''); };
+  $('oyunMenu').addEventListener('click', e => { if (e.target.id === 'oyunMenu') menuKapat(); });
+  addEventListener('keydown', e => { if (e.code === 'Escape' && oyun) { $('oyunMenu').classList.contains('gizli') ? menuAc() : menuKapat(); } });
   $('sesBtn').onclick = () => { const a = Ses.degistir(); $('sesBtn').textContent = a ? '🔊' : '🔇'; };
   $('sesBtn').textContent = Ses.acik ? '🔊' : '🔇';
   $('mikBtn').onclick = mikDegistir;
@@ -243,6 +262,7 @@ const Oyun = (() => {
     mikCiz(); Ag.sesGuncelle();
   }
   function oyunTemizle() {
+    $('oyunMenu').classList.add('gizli');
     if (oyun) { oyun.k.forEach(v => Sahne.at(v.h)); Sahne.gucleriTemizle(); Sahne.mermileriCiz([]); clearInterval(oyun.turSayac); }
     Masa.temizle();
     oyun = null; ben = null;

@@ -32,6 +32,7 @@
         <button id="katilBtn">Katıl</button>
       </div>
       <p id="girisDurum" class="durum"></p>
+      <p id="girisSurum" class="surum"></p>
       <details class="nasil">
         <summary>📖 Nasıl oynanır?</summary>
         <ul>
@@ -99,6 +100,7 @@
     <div id="siraPanel"></div>
     <div id="esyaBilgi" class="gizli"></div>
     <div id="draftBanner"></div>
+    <button id="draftMenuBtn" title="Menü">☰ Menü</button>
     <div id="kararKutu" class="gizli"></div>
     <button id="zarAtBtn" class="gizli">🎲 ZARINI AT!<small>Boşluk tuşu</small></button>
     <div id="kusamim"></div>
@@ -106,6 +108,17 @@
   </section>
   <div id="imlecler"></div>
   <div id="ipucuKutu" class="gizli"></div>
+
+  <!-- Oyun içi menü -->
+  <div id="oyunMenu" class="gizli">
+    <div class="kart">
+      <h2>☰ Menü</h2>
+      <button id="menuDevamBtn" class="ana">▶️ Oyuna devam et</button>
+      <button id="menuLobiBtn">🏠 Herkesi bekleme odasına götür</button>
+      <button id="menuCikBtn">🚪 Ana sayfaya dön (oyundan çık)</button>
+      <p id="menuYazi" class="durum"></p>
+    </div>
+  </div>
 
   <!-- Eşya seçme penceresi (lobi) -->
   <div id="esyaPencere" class="gizli">
@@ -134,7 +147,7 @@
     <div id="ustSag">
       <button id="mikBtn" title="Mikrofon (K)">🎤</button>
       <button id="sesBtn" title="Oyun sesi">🔊</button>
-      <button id="cikBtn" title="Oyundan çık">🚪</button>
+      <button id="cikBtn" title="Menü (oyundan çık)">☰</button>
     </div>
     <div id="akis"></div>
     <div id="buyukYazi"></div>
