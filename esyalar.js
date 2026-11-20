@@ -117,11 +117,11 @@ const Esya = (() => {
   }
 
   // Bir eşya seçme turunda kaç tur oynanır
-  const turSayisi = n => (n >= 8 ? 4 : 5);
+  const turSayisi = (n, istek) => (istek >= 1 && istek <= 7 ? Math.round(istek) : (n >= 8 ? 4 : 5));
 
   // Eşya havuzunu karıştırıp tur başına n eşya ayırır (aynı seçimde aynı eşya iki kez çıkmaz)
-  function draftHazirla(n, rastgele = Math.random) {
-    const T = turSayisi(n);
+  function draftHazirla(n, rastgele = Math.random, istek) {
+    const T = turSayisi(n, istek);
     const havuz = L.map(x => x.id);
     for (let i = havuz.length - 1; i > 0; i--) { const j = Math.floor(rastgele() * (i + 1)); [havuz[i], havuz[j]] = [havuz[j], havuz[i]]; }
     // Her turda iyi ve kötü karışık olsun: havuzu sırayla dağıt

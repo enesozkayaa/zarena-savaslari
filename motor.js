@@ -26,7 +26,7 @@ const Motor = (() => {
     durdur();
     geri = g; rnd = secenek.rastgele || Math.random;
     M = {
-      ayar: { hedef: ayar.hedef || 5, guc: ayar.guc || {}, secimSure: +ayar.secimSure || SECIM_SURE, zarSure: +ayar.zarSure || ZAR_SURE, kararSure: +ayar.kararSure || KARAR_SURE },
+      ayar: { hedef: ayar.hedef || 5, guc: ayar.guc || {}, secimSure: +ayar.secimSure || SECIM_SURE, zarSure: +ayar.zarSure || ZAR_SURE, kararSure: +ayar.kararSure || KARAR_SURE, turSay: +ayar.turSay || 5 },
       oyuncular: liste.map((p, i) => ({ no: i, id: p.id, ad: p.ad, bot: !!p.bot, renk: p.renk ?? i, ten: p.ten ?? (i % 5), puan: 0, kusam: {} })),
       faz: 'bos', draftNo: 0, t: 0, tick: 0,
     };
@@ -48,7 +48,7 @@ const Motor = (() => {
   function draftBaslat() {
     M.draftNo++;
     M.oyuncular.forEach(o => { o.kusam = {}; o.kararlar = []; });
-    M.d = { turlar: E.draftHazirla(M.oyuncular.length, rnd), tur: 0 };
+    M.d = { turlar: E.draftHazirla(M.oyuncular.length, rnd, M.ayar.turSay), tur: 0 };
     M.arena = null;
     turBaslat();
   }

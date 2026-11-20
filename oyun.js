@@ -5,7 +5,7 @@
 // =============================================================
 
 const Oyun = (() => {
-  const SURUM = 5;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
+  const SURUM = 6;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
   const $ = id => document.getElementById(id);
   const E = Esya;
   Sahne.kur($('sahne'));
@@ -21,7 +21,7 @@ const Oyun = (() => {
 
   let mod = null, benimId = null;
   const gucVarsayilan = () => ({ mana: true, hiz: true, can: true, koruma: true });
-  let lobi = { botlar: [], ayar: { hedef: 5, guc: gucVarsayilan(), secimSure: 10, zarSure: 10, kararSure: 10 } };
+  let lobi = { botlar: [], ayar: { hedef: 5, guc: gucVarsayilan(), secimSure: 10, zarSure: 10, kararSure: 10, turSay: 5 } };
   let oyun = null;
 
   // ---------- Giriş ----------
@@ -92,13 +92,13 @@ const Oyun = (() => {
     $('lobiListe').innerHTML = L.map((p, i) => `<li style="--r:${hex(Insan.RENKLER[i])}"><span>${p.bot ? '🤖 ' : ''}${p.id === benimId ? '⭐ ' : ''}${kacis(p.ad)}${p.ses ? ' 🎤' : ''}</span><small>${Insan.RENK_AD[i]}</small></li>`).join('');
     $('ayHedef').value = String(lobi.ayar.hedef);
     $('ayHedef').disabled = !yonetici();
-    [['aySecim', 'secimSure'], ['ayZar', 'zarSure'], ['ayKarar', 'kararSure']].forEach(([el, k]) => { $(el).value = String(lobi.ayar[k] || 10); $(el).disabled = !yonetici(); });
+    [['ayTur', 'turSay'], ['aySecim', 'secimSure'], ['ayZar', 'zarSure'], ['ayKarar', 'kararSure']].forEach(([el, k]) => { $(el).value = String(lobi.ayar[k] || (k === 'turSay' ? 5 : 10)); $(el).disabled = !yonetici(); });
     document.querySelectorAll('#gucler input').forEach(c => { c.checked = !!lobi.ayar.guc[c.dataset.guc]; c.disabled = !yonetici(); });
     $('hepsiBtn').classList.toggle('gizli', !yonetici());
     $('botSatir').classList.toggle('gizli', !yonetici());
     $('botEkleBtn').disabled = L.length >= 10; $('botCikarBtn').disabled = !lobi.botlar.length;
     const acik = Object.values(lobi.ayar.guc).filter(Boolean).length;
-    $('ayarOzet').textContent = `${L.length} oyuncu · ${lobi.ayar.hedef} puan · seçim ${lobi.ayar.secimSure || 10} sn · ${acik ? acik + ' güçlendirme' : 'güçlendirme yok'}`;
+    $('ayarOzet').textContent = `${L.length} oyuncu · ${lobi.ayar.hedef} puan · ${lobi.ayar.turSay || 5} eşya turu · seçim ${lobi.ayar.secimSure || 10} sn · ${acik ? acik + ' güçlendirme' : 'güçlendirme yok'}`;
     $('baslaBtn').classList.toggle('gizli', !yonetici());
     $('lobiMikBtn').classList.toggle('gizli', mod === 'tek');
     document.querySelector('.kodKutu').classList.toggle('gizli', mod === 'tek');
@@ -112,8 +112,8 @@ const Oyun = (() => {
   }));
   $('hepsiBtn').onclick = () => { if (!yonetici()) return; lobi.ayar.guc = gucVarsayilan(); lobiYay(); lobiCiz(); };
   $('ayHedef').addEventListener('change', () => { if (!yonetici()) return; lobi.ayar.hedef = +$('ayHedef').value; lobiYay(); lobiCiz(); });
-  [['aySecim', 'secimSure'], ['ayZar', 'zarSure'], ['ayKarar', 'kararSure']].forEach(([el, k]) => $(el).addEventListener('change', () => { if (!yonetici()) return; lobi.ayar[k] = +$(el).value; try { localStorage.setItem('zs.' + k, $(el).value); } catch (e) { } lobiYay(); lobiCiz(); }));
-  try { ['secimSure', 'zarSure', 'kararSure'].forEach(k => { const v = +localStorage.getItem('zs.' + k); if (v) lobi.ayar[k] = v; }); } catch (e) { }
+  [['ayTur', 'turSay'], ['aySecim', 'secimSure'], ['ayZar', 'zarSure'], ['ayKarar', 'kararSure']].forEach(([el, k]) => $(el).addEventListener('change', () => { if (!yonetici()) return; lobi.ayar[k] = +$(el).value; try { localStorage.setItem('zs.' + k, $(el).value); } catch (e) { } lobiYay(); lobiCiz(); }));
+  try { ['turSay', 'secimSure', 'zarSure', 'kararSure'].forEach(k => { const v = +localStorage.getItem('zs.' + k); if (v) lobi.ayar[k] = v; }); } catch (e) { }
   $('kodKopyalaBtn').onclick = () => { navigator.clipboard?.writeText(Ag.kod).then(() => { $('lobiDurum').textContent = 'Kod kopyalandı.'; }).catch(() => {}); };
   $('lobiCikBtn').onclick = () => menuyeDon('');
   $('lobiMikBtn').onclick = mikDegistir;
@@ -186,7 +186,7 @@ const Oyun = (() => {
   function mesaj(m) {
     switch (m.tip) {
       case 'lobi':
-        lobi = { botlar: m.botlar || [], ayar: { secimSure: 10, zarSure: 10, kararSure: 10, ...m.ayar, guc: m.ayar.guc || gucVarsayilan() } };
+        lobi = { botlar: m.botlar || [], ayar: { secimSure: 10, zarSure: 10, kararSure: 10, turSay: 5, ...m.ayar, guc: m.ayar.guc || gucVarsayilan() } };
         if (!Ag.evMi && m.surum !== SURUM) $('lobiDurum').innerHTML = `⚠️ <b>Sürümün farklı!</b> Oda sahibi: ${m.surum ?? 'eski'}, sen: ${SURUM}. Daha eski olan sayfayı yenilesin (gerekirse kapatıp aç).`;
         if (!oyun || oyun.bitti) lobiCiz();
         break;
