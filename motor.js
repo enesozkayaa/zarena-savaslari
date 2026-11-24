@@ -216,7 +216,7 @@ const Motor = (() => {
     kararlariBitir();
     const n = M.oyuncular.length, R = 10 + n * 1.0;
     const sutunlar = [0, 1, 2, 3].map(k => { const a = Math.PI / 4 + k * Math.PI / 2; return { x: Math.sin(a) * R * 0.5, z: Math.cos(a) * R * 0.5, r: SUTUN_R }; });
-    M.arena = { R, zr: R, sutunlar, t: 0, mermiler: [], guclar: [], mermiNo: 0, gucNo: 0, gucSayac: 4, olaylar: [], bitisSayac: -1, gucDegisti: true };
+    M.arena = { R, zr: R, sutunlar, t: 0, mermiler: [], guclar: [], mermiNo: 0, gucNo: 0, gucSayac: 4, olaylar: [], bitisSayac: -1, gucDegisti: true, yerde: [], yerNo: 0, yerDegisti: true };
     M.oyuncular.forEach((o, i) => {
       const a = (i / n) * Math.PI * 2;
       const st = E.statlar(o.kusam);
@@ -291,7 +291,50 @@ const Motor = (() => {
     let katil = -1;
     if (q.sonVuran >= 0 && A.t - q.sonVuranT < 10) { katil = q.sonVuran; const k = M.oyuncular[katil]; k.oldurme++; k.puan += 1; }
     A.olaylar.push(['ol', q.no, katil]);
+    // Silahı ve kalkanı yere düşer: kalanlar alabilir
+    const sx = Math.cos(q.yon) * 0.55, sz = -Math.sin(q.yon) * 0.55;
+    q.kusam = { ...q.kusam };
+    if (dusur(q, 'silah', q.x + sx, q.z + sz) | dusur(q, 'kalkan', q.x - sx, q.z - sz)) kusamDegisti(q);
   }
+
+  // ---------- Yerdeki silah ve kalkanlar ----------
+  const ALMA_MESAFE = 1.0, TAKAS_MESAFE = 1.6;
+  function dusur(p, yuva, x, z) {
+    const A = M.arena, id = p.kusam[yuva];
+    if (!id) return false;
+    delete p.kusam[yuva];
+    const r = Math.hypot(x, z), sinir = A.R - 0.8;
+    if (r > sinir) { x *= sinir / r; z *= sinir / r; }
+    A.sutunlar.forEach(c => { const dx = x - c.x, dz = z - c.z, d = Math.hypot(dx, dz) || 0.01; if (d < c.r + 0.4) { x = c.x + dx / d * (c.r + 0.4); z = c.z + dz / d * (c.r + 0.4); } });
+    A.yerde.push({ id: ++A.yerNo, esya: id, x, z });
+    A.yerDegisti = true;
+    return true;
+  }
+  function kusamDegisti(p) {
+    const eski = p.st.canMax;
+    p.st = E.statlar(p.kusam);
+    if (!p.olu) p.can = Math.max(1, Math.min(p.st.canMax, p.can + Math.max(0, p.st.canMax - eski)));
+    M.arena.olaylar.push(['ks', p.no, p.kusam.silah || 0, p.kusam.kalkan || 0, p.st.canMax]);
+  }
+  // p yerdeki eşyayı alır; aynı yuvada eşyası varsa onu oraya bırakır (takas)
+  function yerdenAl(p, it) {
+    const A = M.arena, yuva = E.al(it.esya).yuva;
+    A.yerde = A.yerde.filter(y => y !== it); A.yerDegisti = true;
+    p.kusam = { ...p.kusam };
+    const birakti = p.kusam[yuva] || 0;
+    if (birakti) dusur(p, yuva, it.x, it.z);
+    p.kusam[yuva] = it.esya;
+    p.alT = 0.35;
+    kusamDegisti(p);
+    A.olaylar.push(['ya', p.no, it.esya, birakti]);
+  }
+  const enYakinYerde = (p, mesafe) => {
+    let en = null, enD = mesafe;
+    M.arena.yerde.forEach(y => { const d = Math.hypot(y.x - p.x, y.z - p.z); if (d < enD) { enD = d; en = y; } });
+    return en;
+  };
+  // Bot için yerdeki eşya ne kadar iyi? (kendi eşyasından ne kadar iyi)
+  const yerdeKazanc = (p, y) => { const x = E.al(y.esya), eski = E.al(p.kusam[x.yuva]); return x.p - (eski ? eski.p : 0); };
 
   function arenaAdim(dt) {
     const A = M.arena;
@@ -314,6 +357,14 @@ const Motor = (() => {
     });
     // Botlar
     M.oyuncular.forEach(p => { if (p.bot && !p.olu) botAdim(p, dt); });
+    // Yerdeki silah / kalkan: o yuvası boşsa üstünden geçince alır, botlar daha iyiyse takas eder
+    if (A.yerde.length) M.oyuncular.forEach(p => {
+      if (p.olu) return;
+      p.alT = Math.max(0, (p.alT || 0) - dt);
+      if (p.alT > 0) return;
+      const y = A.yerde.find(y => Math.hypot(y.x - p.x, y.z - p.z) < ALMA_MESAFE && (!p.kusam[E.al(y.esya).yuva] || (p.bot && yerdeKazanc(p, y) > 0)));
+      if (y) yerdenAl(p, y);
+    });
     // Güçlendirmeler
     const gt = aktifGuclar();
     if (gt.length) {
@@ -384,6 +435,7 @@ const Motor = (() => {
       // Yakında güçlendirme varsa onu al
       let g = null, gD = 6;
       A.guclar.forEach(x => { const d = Math.hypot(x.x - p.x, x.z - p.z); if (d < gD && Math.hypot(x.x, x.z) < A.zr - 0.5) { gD = d; g = x; } });
+      A.yerde.forEach(x => { const d = Math.hypot(x.x - p.x, x.z - p.z); if (d < gD && yerdeKazanc(p, x) > 0 && Math.hypot(x.x, x.z) < A.zr - 0.5) { gD = d; g = x; } });
       if (q) {
         const dx = q.x - p.x, dz = q.z - p.z, d = Math.hypot(dx, dz) || 1;
         bakis = Math.atan2(dx, dz);
@@ -440,9 +492,10 @@ const Motor = (() => {
       p: M.oyuncular.map(o => [o.no, +o.x.toFixed(2), +o.z.toFixed(2), +o.yon.toFixed(2), Math.ceil(o.can), (o.blk ? 1 : 0) | (o.manaT > 0 ? 2 : 0) | (o.hizT > 0 ? 4 : 0) | (o.korumaT > 0 ? 8 : 0) | (o.olu ? 16 : 0)]),
       m: A.mermiler.map(m => [m.id, +m.x.toFixed(2), +m.z.toFixed(2), m.tur, +Math.atan2(m.vx, m.vz).toFixed(2)]),
       g: A.gucDegisti ? A.guclar.map(g => [g.id, +g.x.toFixed(2), +g.z.toFixed(2), g.tur]) : undefined,
+      y: A.yerDegisti ? A.yerde.map(y => [y.id, +y.x.toFixed(2), +y.z.toFixed(2), y.esya]) : undefined,
       o: A.olaylar.length ? A.olaylar : undefined,
     });
-    A.gucDegisti = false; A.olaylar = [];
+    A.gucDegisti = false; A.yerDegisti = false; A.olaylar = [];
   }
 
   function turBitti() {
@@ -496,6 +549,7 @@ const Motor = (() => {
       return;
     }
     if (m.tip === 'vur') { saldiri(p, sayi(m.y)); return; }
+    if (m.tip === 'al') { if (M.faz === 'savas' && !(p.alT > 0)) { const y = enYakinYerde(p, TAKAS_MESAFE); if (y) yerdenAl(p, y); } return; }
   }
   // Oyuncu ayrıldı: yerine bot oynar
   function cikis(id) {
@@ -512,7 +566,7 @@ const Motor = (() => {
   return {
     baslat, durdur, adim, girdi, cikis, esyaYeri, siralama: n => siralama(n), statlar: E.statlar,
     SECIM_SURE, ZAR_SURE, ZAR_GOSTER, KARAR_SURE, ALAN_BAS, ALAN_SURE, HIZ_TEMEL, OYUNCU_R, GUC_SURE,
-    get M() { return M; }, rastgeleKoy(f) { rnd = f; },
+    get M() { return M; }, rastgeleKoy(f) { rnd = f; }, TAKAS_MESAFE: 1.6, ALMA_MESAFE: 1.0,
   };
 })();
 
