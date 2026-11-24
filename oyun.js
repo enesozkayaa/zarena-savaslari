@@ -5,7 +5,7 @@
 // =============================================================
 
 const Oyun = (() => {
-  const SURUM = 11;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
+  const SURUM = 12;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
   const $ = id => document.getElementById(id);
   const E = Esya;
   Sahne.kur($('sahne'));
@@ -129,7 +129,7 @@ const Oyun = (() => {
     const kapali = new Set(lobi.ayar.kapali || []), yon = yonetici();
     $('esyaPencere').classList.toggle('izle', !yon);
     $('esyaPencereYazi').textContent = (yon ? 'İstemediğin eşyaya tıkla: üstü çizilir ve masaya hiç çıkmaz. Tekrar tıklarsan geri gelir. Fareyle üstüne gel: ne işe yaradığını gör.' : 'Hangi eşyaların açık olduğunu oda sahibi seçer. Fareyle üstüne gel: ne işe yaradığını gör.')
-      + (oyun && !oyun.bitti ? ' ⏭️ Oyun sürerken yapılan değişiklik, arenadan sonraki yeni eşya seçiminde geçerli olur.' : '');
+      + (oyun && !oyun.bitti ? ' ⏭️ Oyun sürerken: masadaki eşyalar değişmez, SONRAKİ turdan itibaren geçerli olur.' + uygulamaNotu : '');
     const acik = E.LISTE.filter(x => !kapali.has(x.id)).length, oyuncuS = Math.max(2, herkes().length);
     $('esyaPencereYazi').textContent += !acik ? ' ⚠️ Hiç eşya açık değil: oyunda HEPSİ kullanılır.' : acik < oyuncuS ? ` ⚠️ Çok az eşya açık (${acik}): aynı eşyalar tekrar tekrar çıkar.` : '';
     $('esyaListe').innerHTML = E.YUVALAR.map(y => {
@@ -158,8 +158,13 @@ const Oyun = (() => {
     kapaliKaydet(); oyundaUygula(); lobiYay(); lobiCiz(); esyaListeCiz();
   });
   // Oyun sürerken: oda sahibinin motoru bir sonraki eşya seçiminde bunu kullanır
-  function oyundaUygula() { if (oyun && yonetici() && Motor.M) Motor.M.ayar.kapali = (lobi.ayar.kapali || []).slice(); }
-  $('oyunEsyaBtn').onclick = () => { $('esyaPencere').classList.remove('gizli'); esyaListeCiz(); };
+  function oyundaUygula() {
+    if (!(oyun && yonetici() && Motor.M)) return;
+    const n = Motor.kapaliGuncelle((lobi.ayar.kapali || []).slice());
+    uygulamaNotu = n ? ` ✅ Kalan ${n} turun eşyaları yeniden hazırlandı.` : ' ✅ Arenadan sonraki eşya seçiminde geçerli olacak.';
+  }
+  let uygulamaNotu = '';
+  $('oyunEsyaBtn').onclick = () => { uygulamaNotu = ''; $('esyaPencere').classList.remove('gizli'); esyaListeCiz(); };
   try { const k = JSON.parse(localStorage.getItem('zs.kapali') || '[]'); if (Array.isArray(k)) lobi.ayar.kapali = k.filter(id => E.HARITA[id]); } catch (e) { }
 
   // ---------- Eşya açıklama kutusu (fareyle üstüne gelince) ----------

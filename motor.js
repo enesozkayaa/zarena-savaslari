@@ -52,6 +52,23 @@ const Motor = (() => {
     M.arena = null;
     turBaslat();
   }
+  // Oda sahibi oyun sırasında eşya açıp kapattı: henüz masaya çıkmamış turlar hemen yeniden hazırlanır
+  function kapaliGuncelle(liste) {
+    if (!M) return 0;
+    M.ayar.kapali = Array.isArray(liste) ? liste.filter(id => E.al(id)) : [];
+    const d = M.d;
+    if (!d || M.arena) return 0;                   // arenadaysa: sonraki eşya seçimi zaten yeni listeyle başlar
+    const ilk = d.tur + 1;                          // şu anki tur masada (ya da zarı atılıyor); sonrakiler değişir
+    const kalan = d.turlar.length - ilk;
+    if (kalan <= 0) return 0;
+    const kullanilan = d.turlar.slice(0, ilk).flat();
+    const kapat = [...new Set([...M.ayar.kapali, ...kullanilan])];
+    // kullanılmamış açık eşya kalmadıysa sadece kapalıları dışarıda bırak (tekrar çıkabilir)
+    const acikKalan = E.LISTE.filter(x => !kapat.includes(x.id)).length;
+    const yeni = E.draftHazirla(M.oyuncular.length, rnd, kalan, acikKalan >= M.oyuncular.length ? kapat : M.ayar.kapali);
+    d.turlar.splice(ilk, kalan, ...yeni);
+    return kalan;
+  }
   // Zarı atar. Eşit atanlar sadece kendi aralarında yeniden atar.
   function siralama(nolar) {
     const asamalar = [];
@@ -564,7 +581,7 @@ const Motor = (() => {
   }
 
   return {
-    baslat, durdur, adim, girdi, cikis, esyaYeri, siralama: n => siralama(n), statlar: E.statlar,
+    baslat, durdur, adim, girdi, cikis, esyaYeri, kapaliGuncelle, siralama: n => siralama(n), statlar: E.statlar,
     SECIM_SURE, ZAR_SURE, ZAR_GOSTER, KARAR_SURE, ALAN_BAS, ALAN_SURE, HIZ_TEMEL, OYUNCU_R, GUC_SURE,
     get M() { return M; }, rastgeleKoy(f) { rnd = f; }, TAKAS_MESAFE: 1.6, ALMA_MESAFE: 1.0,
   };
