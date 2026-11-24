@@ -78,6 +78,11 @@
         <label><input type="checkbox" data-guc="koruma" checked> 🫧 Koruma balonu <small>6 sn yarım hasar</small></label>
         <button id="hepsiBtn" class="kucuk">✅ Hepsini seç</button>
       </fieldset>
+      <fieldset id="ozellikler">
+        <legend>🎮 Ekstra özellikler</legend>
+        <div id="ozListe"></div>
+        <div class="satir"><button id="ozHepsiBtn" class="kucuk">✅ Hepsi</button><button id="ozHicBtn" class="kucuk">⬜ Hiçbiri</button></div>
+      </fieldset>
       <p id="ayarOzet" class="durum"></p>
       <div class="satir">
         <button id="lobiMikBtn">🎤 Mikrofon kapalı</button>
@@ -102,6 +107,7 @@
     <div id="draftBanner"></div>
     <button id="draftMenuBtn" title="Menü">☰ Menü</button>
     <div id="kararKutu" class="gizli"></div>
+    <button id="jokerBtn" class="gizli">🃏 JOKER KULLAN<small>Bu tur 2 eşya al</small></button>
     <button id="zarAtBtn" class="gizli">🎲 ZARINI AT!<small>Boşluk tuşu</small></button>
     <div id="kusamim"></div>
     <div id="kameraIpucu"><span>🖱️ Sürükle: etrafında dön · Tekerlek: yakınlaş</span> <button id="kameraSifirBtn" class="kucuk">🎥 Sıfırla</button> <button id="oyunEsyaBtn" class="kucuk">🎒 Eşyalar</button></div>
@@ -157,6 +163,7 @@
     <div id="ipucu" class="serbest"></div>
     <div id="alYazi" class="gizli"></div>
     <div id="izleYazi" class="gizli"></div>
+    <div id="oyPanel" class="gizli"><div class="oyBaslik">👥 Seyirci oyu: arenayı sen karıştır!</div><div id="oyDugmeler"></div><div id="oySure"></div></div>
     <div id="joystick" class="dokunmatik"><div id="joyTopuz"></div></div>
     <button id="vurBtn" class="dokunmatik">⚔️</button>
     <button id="kalkanBtn" class="dokunmatik">🛡️</button>
