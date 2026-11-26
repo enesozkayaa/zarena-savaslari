@@ -123,21 +123,31 @@ const Masa = (() => {
   }
 
   // ---------- Eşyalar ----------
-  function esyalariCikar(idler, alinan, hemen) {
+  // Kör seçim: içi görünmeyen sandık
+  function gizliKutu() {
+    const g = new THREE.Group();
+    const m = Sahne.paylas('gizliKutuM', () => new THREE.MeshStandardMaterial({ color: 0x8a5a2a, roughness: 0.8 })), k = Sahne.paylas('gizliKenarM', () => new THREE.MeshStandardMaterial({ color: 0xd8b040, metalness: 0.6, roughness: 0.3 }));
+    const kutu = new THREE.Mesh(Sahne.paylas('gizliKutuG', () => new THREE.BoxGeometry(0.5, 0.5, 0.5)), m); kutu.position.y = 0.27; kutu.castShadow = true; g.add(kutu);
+    [-0.2, 0.2].forEach(a => { const s = new THREE.Mesh(Sahne.paylas('gizliSeritG', () => new THREE.BoxGeometry(0.06, 0.52, 0.52)), k); s.position.set(a, 0.27, 0); g.add(s); });
+    const soru = Sahne.metinSprite('?', '#ffd860', 0.36); soru.position.y = 0.62; g.add(soru);
+    return g;
+  }
+  function esyalariCikar(idler, alinan, hemen, kor) {
     esyalar.forEach(esyaAt); esyalar = [];
     idler.forEach((id, i) => {
       if (alinan && alinan[i] !== undefined) { esyalar.push({ g: new THREE.Group(), i, id, alindi: true, bitti: true }); return; }
       const x = Esya.al(id), y = Motor.esyaYeri(i, idler.length);
       const g = new THREE.Group(); g.position.set(y.x, MASA_Y, y.z);
       // Kaide: iyiliğine göre renkli halka (altın = efsane)
-      const renk = x.p >= 8 ? 0xffc21a : x.p >= 5 ? 0x5aa8ff : x.p >= 3 ? 0xb8b8b8 : 0x8a6a4a;
+      const renk = kor ? 0x8a6a4a : x.p >= 8 ? 0xffc21a : x.p >= 5 ? 0x5aa8ff : x.p >= 3 ? 0xb8b8b8 : 0x8a6a4a;
       const kaide = new THREE.Mesh(Sahne.paylas('kaideG', () => new THREE.CylinderGeometry(0.42, 0.46, 0.06, 28)), Sahne.paylas('kaideM', () => new THREE.MeshStandardMaterial({ color: 0x3a2414, roughness: 0.6 })));
       kaide.position.y = 0.03; kaide.receiveShadow = true; g.add(kaide);
       const halka = new THREE.Mesh(Sahne.paylas('halkaG', () => new THREE.TorusGeometry(0.44, 0.025, 6, 32)), new THREE.MeshStandardMaterial({ color: renk, emissive: renk, emissiveIntensity: x.p >= 8 ? 0.8 : 0.35, metalness: 0.5, roughness: 0.3 }));
       halka.rotation.x = Math.PI / 2; halka.position.y = 0.06; g.add(halka);
-      if (x.p >= 8) { const isik = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.4, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd860, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false })); isik.position.y = 0.75; g.add(isik); }
-      const model = Insan.vitrin(id); model.position.y = 0.06; model.scale.multiplyScalar(1.35); g.add(model);
-      const et = Sahne.metinSprite(x.ad, x.p >= 8 ? '#ffd860' : '#ffffff', 0.2); et.position.y = 1.55; g.add(et);
+      if (x.p >= 8 && !kor) { const isik = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.4, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd860, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false })); isik.position.y = 0.75; g.add(isik); }
+      const model = kor ? gizliKutu() : Insan.vitrin(id); model.position.y = 0.06; if (!kor) model.scale.multiplyScalar(1.35); g.add(model);
+      const ys = Math.max(1, Math.round(x.p / 2));
+      const et = Sahne.metinSprite(kor ? '★'.repeat(ys) + '☆'.repeat(5 - ys) : x.ad, kor ? '#ffd860' : x.p >= 8 ? '#ffd860' : '#ffffff', 0.2); et.position.y = kor ? 1.0 : 1.55; g.add(et);
       g.userData = { model, halka, et, i };
       g.scale.setScalar(hemen ? 1 : 0.001);
       Sahne.scene.add(g);

@@ -28,14 +28,22 @@ const Sahne = (() => {
       gr.addColorStop(0, '#2f78c8'); gr.addColorStop(0.45, '#7ab8e8'); gr.addColorStop(0.5, '#cfe6f4'); gr.addColorStop(1, '#e8d8b8');
       g.fillStyle = gr; g.fillRect(0, 0, 4, 256);
       const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-      scene.add(new THREE.Mesh(new THREE.SphereGeometry(300, 24, 16), new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide, fog: false })));
+      gok = new THREE.Mesh(new THREE.SphereGeometry(300, 24, 16), new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide, fog: false })); scene.add(gok);
+      bulutlar = new THREE.Group(); scene.add(bulutlar);
       for (let i = 0; i < 14; i++) {   // bulutlar
         const b = new THREE.Group(), a = Math.random() * Math.PI * 2, r = 120 + Math.random() * 80;
         for (let k = 0; k < 5; k++) { const m = new THREE.Mesh(new THREE.SphereGeometry(6 + Math.random() * 5, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false })); m.position.set(k * 7 - 14, Math.random() * 3, Math.random() * 6); m.scale.y = 0.55; b.add(m); }
-        b.position.set(Math.sin(a) * r, 55 + Math.random() * 35, Math.cos(a) * r); b.lookAt(0, b.position.y, 0); scene.add(b);
+        b.position.set(Math.sin(a) * r, 55 + Math.random() * 35, Math.cos(a) * r); b.lookAt(0, b.position.y, 0); bulutlar.add(b);
       }
     }
-    scene.add(new THREE.HemisphereLight(0xdff0ff, 0x8a6a40, 0.9));
+    hemi = new THREE.HemisphereLight(0xdff0ff, 0x8a6a40, 0.9); scene.add(hemi);
+    { // gece için: ay ve yıldızlar (gündüz gizli)
+      geceGrup = new THREE.Group(); geceGrup.visible = false; scene.add(geceGrup);
+      const ay = new THREE.Mesh(new THREE.SphereGeometry(9, 20, 14), new THREE.MeshBasicMaterial({ color: 0xf4f0d8, fog: false })); ay.position.set(-90, 120, -150); geceGrup.add(ay);
+      const yp = []; for (let i = 0; i < 400; i++) { const a = Math.random() * Math.PI * 2, b = Math.random() * 1.2 + 0.15, r = 280; yp.push(Math.cos(a) * Math.cos(b) * r, Math.sin(b) * r, Math.sin(a) * Math.cos(b) * r); }
+      const yg = new THREE.BufferGeometry(); yg.setAttribute('position', new THREE.Float32BufferAttribute(yp, 3));
+      geceGrup.add(new THREE.Points(yg, new THREE.PointsMaterial({ color: 0xffffff, size: 1.6, sizeAttenuation: false, fog: false })));
+    }
     isik = new THREE.DirectionalLight(0xfff2dd, 1.6);
     isik.position.set(14, 30, 10); isik.castShadow = true;
     isik.shadow.mapSize.set(telefon ? 1024 : 2048, telefon ? 1024 : 2048);
@@ -72,7 +80,25 @@ const Sahne = (() => {
     const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(6, 6); t.colorSpace = THREE.SRGBColorSpace;
     return t;
   }
-  let kum = null;
+  let kum = null, gok = null, bulutlar = null, hemi = null, geceGrup = null, geceMi = false;
+  // 🌙 Gece arenası: ışıklar kısılır, meşaleler ve oyuncuların fenerleri aydınlatır
+  function gece(acik) {
+    geceMi = !!acik;
+    hemi.intensity = acik ? 0.16 : 0.9; hemi.color.setHex(acik ? 0x8090c0 : 0xdff0ff);
+    isik.intensity = acik ? 0.22 : 1.6; isik.color.setHex(acik ? 0x9ab0ff : 0xfff2dd);
+    scene.background.setHex(acik ? 0x070b1e : 0x8ac8f0);
+    scene.fog.color.setHex(acik ? 0x070b1e : 0xb8dcf0); scene.fog.near = acik ? 22 : 70; scene.fog.far = acik ? 75 : 190;
+    gok.visible = !acik; bulutlar.visible = !acik; geceGrup.visible = acik;
+    const ag = arenaGrup;
+    if (!ag) return;
+    (ag.userData.geceIsik || []).forEach(l => l.parent && l.parent.remove(l)); ag.userData.geceIsik = [];
+    if (!acik) return;
+    const alevler = ag.userData.alevler || [], adim = Math.max(1, Math.floor(alevler.length / 6));
+    for (let i = 0; i < alevler.length; i += adim) {
+      const l = new THREE.PointLight(0xff8a3a, 2.4, 11, 1.4); l.position.y = 0.4; alevler[i].parent.add(l); ag.userData.geceIsik.push(l);
+      alevler[i].scale.set(1.6, 2.4, 1.6);
+    }
+  }
   // ---------- Arena ----------
   function arenaKur(R, sutunlar) {
     at(arenaGrup);
@@ -380,7 +406,7 @@ const Sahne = (() => {
 
   return {
     kur, arenaKur, alanGuncelle, at, paylas, yorunge, yorungeAl, elle, kameraSifirla, metinSprite, sars, zemindeNokta, etiketYap, etiketCiz, partikul, sayiGoster, emojiSprite,
-    gucleriCiz, gucleriTemizle, mermileriCiz, mermiPatla, ciz, cosku, GUC_EMOJI, GUC_RENK,
+    gece, get geceMi() { return geceMi; }, gucleriCiz, gucleriTemizle, mermileriCiz, mermiPatla, ciz, cosku, GUC_EMOJI, GUC_RENK,
     get scene() { return scene; }, get camera() { return camera; }, get bellek() { return renderer.info.memory; },
   };
 })();

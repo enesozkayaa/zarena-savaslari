@@ -283,3 +283,17 @@ body.dokun #ipucu { display: none; }
 #lobiListe .takimRozet { cursor: default; }
 #lobiListe .takimRozet.degistir { cursor: pointer; }
 #lobiListe li.t0 { background: #ffe8e4; } #lobiListe li.t1 { background: #e4eeff; }
+
+/* Sürüm 18: takas, ejderha silah seçimi, ejderha can çubuğu */
+#takasKutu, #silahKutu { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100% - 20px)); max-height: calc(100% - 20px); overflow-y: auto; background: #2a1608f2; color: #fff; border: 3px solid #ffd36a; border-radius: 16px; padding: 12px; box-shadow: 0 12px 40px #000c; z-index: 20; text-align: center; }
+.tkBaslik { font-family: 'Lilita One', sans-serif; font-size: 22px; color: #ffd36a; }
+.tkAlt { font-size: 13px; opacity: .85; margin: 4px 0 8px; font-weight: 700; }
+.tkListe { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.tkListe button { display: flex; flex-direction: column; align-items: center; min-width: 92px; font-size: 13px; padding: 6px 8px; }
+.tkListe button b { font-size: 26px; }
+.tkListe button i { font-style: normal; font-size: 11px; opacity: .8; }
+.tkListe button.secili { background: #7aff5a; box-shadow: 0 0 0 3px #fff; }
+#bossBar { margin-top: 4px; display: flex; align-items: center; gap: 6px; justify-content: center; font-weight: 900; }
+#bossBar .bbCubuk { width: min(320px, 46vw); height: 14px; background: #0008; border: 2px solid #ffd36a; border-radius: 8px; overflow: hidden; }
+#bossBar .bbCubuk i { display: block; height: 100%; background: linear-gradient(#ff6a3a, #b0180a); width: 100%; transition: width .2s; }
+#bossBar b { font-size: 12px; }

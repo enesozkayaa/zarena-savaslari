@@ -73,6 +73,9 @@
         <label>🎒 Eşya turu (arena öncesi) <select id="ayTur"><option value="3">3 tur</option><option value="4">4 tur</option><option value="5" selected>5 tur</option><option value="6">6 tur</option><option value="7">7 tur</option></select></label>
         <label>⏱️ Eşya seçme süresi <select id="aySecim"><option value="5">5 sn</option><option value="10" selected>10 sn</option><option value="15">15 sn</option><option value="20">20 sn</option><option value="30">30 sn</option></select></label>
         <label>🎲 Zar atma süresi <select id="ayZar"><option value="5">5 sn</option><option value="10" selected>10 sn</option><option value="15">15 sn</option><option value="20">20 sn</option></select></label>
+        <label>🌙 Gece arenası <select id="ayGece"><option value="0">Hiç</option><option value="1">Bazen</option><option value="2">Her zaman</option></select></label>
+        <label>🐉 Ejderha (boss) turu <select id="ayBoss"><option value="0">Yok</option><option value="2">Her 2 arenada bir</option><option value="3">Her 3 arenada bir</option><option value="4">Her 4 arenada bir</option><option value="5">Her 5 arenada bir</option></select></label>
+        <label>🗡️ Ejderhada silah <select id="ayBossSilah"><option value="sec">Herkes istediğini seçer</option><option value="zar">Zardan ne geldiyse</option></select></label>
         <label>🤔 Giy / koru karar süresi <select id="ayKarar"><option value="5">5 sn</option><option value="10" selected>10 sn</option><option value="20">20 sn</option><option value="30">30 sn</option></select></label>
       </div>
       <fieldset id="gucler">
@@ -112,6 +115,8 @@
     <div id="draftBanner"></div>
     <button id="draftMenuBtn" title="Menü">☰ Menü</button>
     <div id="kararKutu" class="gizli"></div>
+    <div id="takasKutu" class="gizli"></div>
+    <div id="silahKutu" class="gizli"></div>
     <button id="jokerBtn" class="gizli">🃏 JOKER KULLAN<small>Bu tur 2 eşya al</small></button>
     <button id="zarAtBtn" class="gizli">🎲 ZARINI AT!<small>Boşluk tuşu</small></button>
     <div id="kusamim"></div>
@@ -154,7 +159,7 @@
       <div id="etkiler"></div>
       <ol id="puanTablo"></ol>
     </div>
-    <div id="ustOrta"><div id="kalanYazi"></div><div id="alanYazi"></div></div>
+    <div id="ustOrta"><div id="kalanYazi"></div><div id="alanYazi"></div><div id="bossBar" class="gizli"><span>🐉 Ejderha</span><div class="bbCubuk"><i id="bossBarDolu"></i></div><b id="bossBarYazi"></b></div></div>
     <div id="ustSag">
       <button id="mikBtn" title="Mikrofon (K)">🎤</button>
       <button id="sesBtn" title="Oyun sesi">🔊</button>
@@ -202,6 +207,7 @@
   <script src="esyalar.js"></script>
   <script src="motor.js"></script>
   <script src="insan.js"></script>
+  <script src="ejderha.js"></script>
   <script src="masa.js"></script>
   <script src="sahne.js"></script>
   <script src="ag.js"></script>

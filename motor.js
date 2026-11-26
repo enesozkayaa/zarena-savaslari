@@ -23,12 +23,18 @@ const Motor = (() => {
   const yolla = m => geri && geri.herkese(m);
 
   // Lobide açılıp kapatılan ekstra özellikler
-  const OZ_ADLAR = ['tuzak', 'ozel', 'set', 'sandik', 'seyirci', 'takim', 'joker'];
-  const ozDuzelt = oz => Object.fromEntries(OZ_ADLAR.map(k => [k, !!(oz && oz[k])]));
+  const OZ_ADLAR = ['tuzak', 'ozel', 'set', 'sandik', 'seyirci', 'takim', 'joker', 'kor', 'takas', 'duello', 'duelloKaris'];
+  const ozDuzelt = oz => ({
+    ...Object.fromEntries(OZ_ADLAR.map(k => [k, !!(oz && oz[k])])),
+    gece: [0, 1, 2].includes(+oz?.gece) ? +oz.gece : 0,                 // 0 hiç, 1 bazen, 2 hep
+    boss: [0, 2, 3, 4, 5].includes(+oz?.boss) ? +oz.boss : 0,           // kaç arenada bir ejderha (0 = yok)
+    bossSilah: oz?.bossSilah === 'sec' ? 'sec' : 'zar',                  // boss turunda silah: zardan geleni mi, herkes seçer mi
+  });
   const kapaliEtkin = () => M.ayar.oz.ozel ? M.ayar.kapali : [...M.ayar.kapali, ...E.OZEL_IDLER];
   // Takım modu: çift numaralılar 🔴, tek numaralılar 🔵
-  const takimli = () => !!M.ayar.oz.takim;
-  const dost = (a, b) => takimli() && a !== b && a.takim === b.takim;
+  const takimli = () => !!M.ayar.oz.takim && !(M.arena && (M.arena.duello || M.arena.boss));   // düello ve ejderha turunda takım yok
+  const dost = (a, b) => a !== b && (M.arena?.boss ? true : takimli() && a.takim === b.takim);  // ejderha turunda herkes aynı taraftadır
+  const bossSirasi = () => M.ayar.oz.boss > 0 && ((M.arenaNo || 0) + 1) % M.ayar.oz.boss === 0;  // sıradaki arena ejderha mı?
   function puanVer(p, n) { if (takimli()) M.oyuncular.forEach(o => { if (o.takim === p.takim) o.puan += n; }); else p.puan += n; }
 
   function baslat(liste, ayar, g, secenek = {}) {
@@ -115,7 +121,7 @@ const Motor = (() => {
     if (M.faz !== 'zar' || !d.bekleyen.includes(no)) return false;
     const v = 1 + Math.floor(rnd() * 6), a = d.asamalar.length - 1;
     d.asamalar[a][no] = v;
-    if (M.ayar.oz.joker && a === 0 && v === 6) { const p = M.oyuncular[no]; p.joker = Math.min(2, (p.joker || 0) + 1); }
+    if (M.ayar.oz.joker && a === 0 && v === 6 && !d.takasMod) { const p = M.oyuncular[no]; p.joker = Math.min(2, (p.joker || 0) + 1); }
     d.bekleyen = d.bekleyen.filter(x => x !== no);
     d.sonZar = { no, v, a };
     if (!d.bekleyen.length) asamaBitti();
@@ -129,7 +135,12 @@ const Motor = (() => {
       [...new Set(g.map(no => a[no]))].sort((x, y) => y - x).forEach(v => yeni.push(g.filter(no => a[no] === v)));
     });
     d.gruplar = yeni;
-    if (yeni.every(g => g.length === 1)) {
+    if (yeni.every(g => g.length === 1) && d.takasMod) {
+      d.sira = yeni.flat();
+      M.faz = 'takasSec'; M.sayac = M.ayar.kararSure + 5;
+      // botlar en kötü eşyasını verir
+      M.oyuncular.forEach(o => { if (o.bot) d.takasVer[o.no] = enKotuKusam(o); });
+    } else if (yeni.every(g => g.length === 1)) {
       d.sira = yeni.flat();
       M.faz = 'zarBitti'; M.sayac = ZAR_GOSTER;       // zarlar biraz görünür, sonra eşyalar çıkar
     } else {
@@ -141,6 +152,45 @@ const Motor = (() => {
     draftYolla();
   }
   const kalanlar = () => M.d.esyalar.map((id, i) => i).filter(i => M.d.alinan[i] === undefined);
+  // ---------- Takas turu: zar sırasına göre herkes bir eşyasını bir alttakine verir (en sondaki en üsttekine) ----------
+  const enKotuKusam = o => { const ids = Object.values(o.kusam || {}); return ids.length ? ids.reduce((a, b) => (E.al(a).p <= E.al(b).p ? a : b)) : null; };
+  function takasBaslat() {
+    const d = M.d, hepsi = M.oyuncular.map(o => o.no);
+    d.takasYapildi = true; d.takasMod = true; d.tur = d.turlar.length;
+    Object.assign(d, { esyalar: [], alinan: {}, asamalar: [{}], gruplar: [hepsi], bekleyen: hepsi.slice(), sira: null, siraIdx: 0, son: null, sonZar: null, esit: null, ekstra: null, takasVer: {}, takasSonuc: null });
+    zarBekle();
+  }
+  function takasBitir() {
+    const d = M.d, n = d.sira.length, sonuc = [];
+    d.sira.forEach(no => { if (d.takasVer[no] === undefined) d.takasVer[no] = enKotuKusam(M.oyuncular[no]); });   // seçmeyen en kötüsünü verir
+    d.sira.forEach(no => { const id = d.takasVer[no], p = M.oyuncular[no]; if (!id) return; const y = E.al(id).yuva; if (p.kusam[y] === id) { p.kusam = { ...p.kusam }; delete p.kusam[y]; } });
+    d.sira.forEach((no, k) => {
+      const id = d.takasVer[no]; if (!id) return;
+      const alan = M.oyuncular[d.sira[(k + 1) % n]], y = E.al(id).yuva;
+      sonuc.push([no, alan.no, id]);
+      if (!alan.kusam[y]) alan.kusam = { ...alan.kusam, [y]: id };
+      else if (alan.bot) { if (E.al(id).p > E.al(alan.kusam[y]).p) alan.kusam = { ...alan.kusam, [y]: id }; }
+      else alan.kararlar.push(id);
+    });
+    d.takasSonuc = sonuc; d.takasMod = false;
+    M.faz = 'bekle'; M.sayac = 3.5; M.sonraki = 'arena';
+    draftYolla();
+  }
+  // ---------- Ejderha turundan önce: herkes istediği silahı seçer ----------
+  const silahListesi = () => { const k = kapaliEtkin(), l = E.LISTE.filter(x => x.yuva === 'silah' && !k.includes(x.id)); return l.length ? l : E.LISTE.filter(x => x.yuva === 'silah'); };
+  function silahSecBaslat() {
+    const d = M.d, l = silahListesi().filter(x => x.p >= 6);
+    d.silahSecildi = true; d.silahSec = {};
+    M.oyuncular.forEach(o => { if (o.bot) d.silahSec[o.no] = (l[Math.floor(rnd() * l.length)] || silahListesi()[0]).id; });
+    M.faz = 'silahSec'; M.sayac = 15;
+    draftYolla();
+  }
+  function silahSecBitir() {
+    const d = M.d;
+    M.oyuncular.forEach(o => { const id = d.silahSec?.[o.no]; if (id) o.kusam = { ...o.kusam, silah: id }; });
+    M.faz = 'bekle'; M.sayac = 1.2; M.sonraki = 'arena';
+    draftYolla();
+  }
   function siradakiBasla() {
     const d = M.d, no = d.sira[d.siraIdx], p = M.oyuncular[no], kalan = kalanlar();
     M.faz = 'secim';
@@ -181,9 +231,11 @@ const Motor = (() => {
     yolla({
       tip: 'draft', faz: M.faz, tur: d.tur, turSay: d.turlar.length, esyalar: d.esyalar, alinan: d.alinan, asamalar: d.asamalar, sira: d.sira,
       bekleyen: d.bekleyen, sonZar: d.sonZar, esit: d.esit || null, kararlar: M.oyuncular.map(o => o.kararlar || []),
-      sureTop: M.faz === 'secim' ? M.ayar.secimSure : M.faz === 'zar' ? M.ayar.zarSure : M.faz === 'kararBekle' ? M.ayar.kararSure : 0,
+      sureTop: M.faz === 'secim' ? M.ayar.secimSure : M.faz === 'zar' ? M.ayar.zarSure : M.faz === 'kararBekle' ? M.ayar.kararSure : M.faz === 'takasSec' ? M.ayar.kararSure + 5 : M.faz === 'silahSec' ? 15 : 0,
       siraIdx: d.siraIdx, sure: M.sayac, son: d.son, kusam: M.oyuncular.map(o => o.kusam), sonraki: M.sonraki || null, draftNo: M.draftNo,
       joker: M.oyuncular.map(o => o.joker || 0), ekstra: d.ekstra ?? null,
+      takas: !!d.takasMod, takasVer: d.takasVer && M.faz === 'takasSec' ? M.oyuncular.map(o => d.takasVer[o.no] !== undefined) : null, takasSonuc: d.takasSonuc || null,
+      silahSec: M.faz === 'silahSec' ? M.oyuncular.map(o => !!d.silahSec?.[o.no]) : null, bossGeliyor: bossSirasi(),
     });
   }
   // Eşyaların masadaki yeri (masa ortası 0,0; oyuncular -z tarafında, kamera +z tarafında)
@@ -215,11 +267,17 @@ const Motor = (() => {
     } else if (M.faz === 'bekle') {
       if (M.sayac <= 0) {
         if (M.sonraki === 'tur') { turBaslat(); M.sonraki = null; }
+        else if (M.ayar.oz.takas && !d.takasYapildi && M.oyuncular.length >= 2) takasBaslat();
+        else if (bossSirasi() && M.ayar.oz.bossSilah === 'sec' && !d.silahSecildi) silahSecBaslat();
         else if (kararBekleyen()) { M.faz = 'kararBekle'; M.sayac = M.ayar.kararSure; draftYolla(); }   // karar vermeyen var: arena bekler
         else { arenaBaslat(); M.sonraki = null; }
       }
     } else if (M.faz === 'kararBekle') {
       if (M.sayac <= 0 || !kararBekleyen()) { arenaBaslat(); M.sonraki = null; }
+    } else if (M.faz === 'takasSec') {
+      if (M.sayac <= 0 || M.oyuncular.every(o => d.takasVer[o.no] !== undefined)) takasBitir();
+    } else if (M.faz === 'silahSec') {
+      if (M.sayac <= 0 || M.oyuncular.every(o => o.bot || o.cikti || d.silahSec[o.no])) silahSecBitir();
     }
     // İmleçleri gönder
     if (M.tick % 3 === 0) {
@@ -247,10 +305,15 @@ const Motor = (() => {
   function arenaBaslat() {
     kararlariBitir();
     const n = M.oyuncular.length, R = arenaR(n);
+    M.arenaNo = (M.arenaNo || 0) + 1;
+    const bossVar = M.ayar.oz.boss > 0 && M.arenaNo % M.ayar.oz.boss === 0;
+    const duelloVar = !bossVar && M.ayar.oz.duello;
+    const gece = M.ayar.oz.gece === 2 || (M.ayar.oz.gece === 1 && rnd() < 0.5);
     const sutunlar = [0, 1, 2, 3].map(k => { const a = Math.PI / 4 + k * Math.PI / 2; return { x: Math.sin(a) * R * 0.5, z: Math.cos(a) * R * 0.5, r: SUTUN_R }; });
     if (R >= 18) [0, 1, 2, 3].forEach(k => { const a = Math.PI / 8 + k * Math.PI / 2; sutunlar.push({ x: Math.sin(a) * R * 0.74, z: Math.cos(a) * R * 0.74, r: SUTUN_R }); });   // büyük arenada saklanacak ek sütunlar
     M.arena = { R, zr: R, sutunlar, t: 0, mermiler: [], guclar: [], mermiNo: 0, gucNo: 0, gucSayac: 4, olaylar: [], bitisSayac: -1, gucDegisti: true, yerde: [], yerNo: 0, yerDegisti: true,
-      tuzak: M.ayar.oz.tuzak ? tuzakHazirla(R, sutunlar, n) : null, sandik: null, sandikNo: 0, sandikSayac: 12, sandikDegisti: false,
+      tuzak: M.ayar.oz.tuzak && !bossVar ? tuzakHazirla(R, sutunlar, n) : null, gece, alanT0: 0,
+      boss: bossVar ? { x: 0, z: 0, yon: 0, can: bossHP(n), canMax: bossHP(n), durum: 0, dt: 0, saldiriSayac: 3, hedefNo: -1, hedefT: 0, hasar: {}, yavasT: 0, olu: false, sure: 0 } : null, duello: null, sandik: null, sandikNo: 0, sandikSayac: 12, sandikDegisti: false,
       oy: null, oySayac: 12, meteorlar: [], meteorNo: 0, meteorDegisti: false };
     M.oyuncular.forEach((o, i) => {
       let a = (i / n) * Math.PI * 2;
@@ -262,12 +325,13 @@ const Motor = (() => {
       Object.assign(o, {
         st, x: Math.sin(a) * R * 0.78, z: Math.cos(a) * R * 0.78, yon: a + Math.PI, can: st.canMax, olu: false, cd: 0, blk: false, blkT: 0,
         manaT: 0, hizT: 0, korumaT: 0, sonVuran: -1, sonVuranT: -99, oldurme: 0, vx: 0, vz: 0, sonSaldiri: -9, hedefNo: -1, hedefT: 0, yan: rnd() < 0.5 ? 1 : -1, yanT: 0,
-        tepki: 0.1 + rnd() * 0.25, cikti: o.cikti || false, yavasT: 0, dirildi: false, kacisOldu: false, bicakCd: 0, mvx: 0, mvz: 0, atesYak: 0,
+        tepki: 0.1 + rnd() * 0.25, cikti: o.cikti || false, trib: false, domatesT: 3 + rnd() * 4, bossAci: null, yavasT: 0, dirildi: false, kacisOldu: false, bicakCd: 0, mvx: 0, mvz: 0, atesYak: 0,
       });
       if (o.cikti) o.olu = true;
     });
+    if (duelloVar) duelloKur();
     M.faz = 'geri'; M.sayac = GERI;
-    yolla({ tip: 'arena', R, sutunlar, oyuncular: M.oyuncular.map(o => ({ no: o.no, x: o.x, z: o.z, yon: o.yon, can: o.can, canMax: o.st.canMax, kusam: o.kusam })), guc: M.ayar.guc, tuzak: M.arena.tuzak });
+    yolla({ tip: 'arena', R, sutunlar, gece, boss: bossVar, duello: !!M.arena.duello, bossR: BOSS_R, oyuncular: M.oyuncular.map(o => ({ no: o.no, x: o.x, z: o.z, yon: o.yon, can: o.can, canMax: o.st.canMax, kusam: o.kusam })), guc: M.ayar.guc, tuzak: M.arena.tuzak });
   }
   // Arena yarıçapı (eskiden 10 + n idi; daha geniş alan)
   function arenaR(n) { return +(14 + n * 1.3).toFixed(1); }
@@ -429,6 +493,169 @@ const Motor = (() => {
       return false;
     });
   }
+  // =============== EJDERHA (BOSS) TURU ===============
+  const BOSS_R = 2.0, BOSS_SURE = 120;
+  function bossHP(n) { return 500 + 450 * n; }
+  const donus = (B, hedef, adim) => { let f = hedef - B.yon; f = Math.atan2(Math.sin(f), Math.cos(f)); B.yon += Math.max(-adim, Math.min(adim, f)); };
+  function bossVur(o, miktar, ix, iz) {
+    const B = M.arena.boss;
+    if (o.blk && aci(o.yon, Math.atan2(B.x - o.x, B.z - o.z)) < 1.3) { miktar *= 1 - o.st.blok; ix *= 0.4; iz *= 0.4; }
+    cevreHasar(o, miktar, ix, iz);
+  }
+  function bossHasarAl(p, s, mana) {
+    const A = M.arena, B = A.boss;
+    if (!B || B.olu || !p) return;
+    const dmg = s.hasar * HASAR_CARPAN * (mana ? 1.8 : 1) * (p.st?.hasarK || 1);
+    B.can -= dmg; B.hasar[p.no] = (B.hasar[p.no] || 0) + dmg;
+    if (s.ozel === 'vampir' && !p.olu) { const c = Math.max(1, Math.round(dmg * 0.2)); p.can = Math.min(p.st.canMax, p.can + c); A.olaylar.push(['iyi', p.no, c]); }
+    if (s.ozel === 'don') B.yavasT = 2;
+    A.olaylar.push(['bh', Math.max(1, Math.round(dmg)), mana ? 1 : 0]);
+    if (B.can <= 0) { B.olu = true; B.can = 0; A.olaylar.push(['bo']); if (A.bitisSayac < 0) A.bitisSayac = 3; }
+  }
+  function bossAdim(dt) {
+    const A = M.arena, B = A.boss;
+    if (!B || B.olu || B.kacti) return;
+    B.sure += dt;
+    if (B.sure > BOSS_SURE) { B.kacti = true; A.olaylar.push(['bk']); if (A.bitisSayac < 0) A.bitisSayac = 2; return; }
+    const canli = M.oyuncular.filter(o => !o.olu);
+    if (!canli.length) return;
+    B.yavasT = Math.max(0, B.yavasT - dt);
+    B.hedefT -= dt;
+    let q = M.oyuncular[B.hedefNo];
+    if (B.hedefT <= 0 || !q || q.olu) {
+      q = canli.reduce((a, b) => (Math.hypot(a.x - B.x, a.z - B.z) <= Math.hypot(b.x - B.x, b.z - B.z) ? a : b));
+      B.hedefNo = q.no; B.hedefT = 3 + rnd() * 2;
+    }
+    const dx = q.x - B.x, dz = q.z - B.z, d = Math.hypot(dx, dz), hedefYon = Math.atan2(dx, dz), yavas = B.yavasT > 0 ? 0.5 : 1;
+    const agizX = B.x + Math.sin(B.yon) * BOSS_R * 1.2, agizZ = B.z + Math.cos(B.yon) * BOSS_R * 1.2;
+    if (B.durum === 0) {
+      donus(B, hedefYon, 1.6 * dt * yavas);
+      if (d > BOSS_R + 2.2) { B.x += Math.sin(B.yon) * 2.3 * yavas * dt; B.z += Math.cos(B.yon) * 2.3 * yavas * dt; }
+      B.saldiriSayac -= dt;
+      if (B.saldiriSayac <= 0) {
+        const arkada = canli.some(o => Math.hypot(o.x - B.x, o.z - B.z) < BOSS_R + 3 && aci(Math.atan2(o.x - B.x, o.z - B.z), B.yon) > 2.0);
+        if (arkada && rnd() < 0.7) { B.durum = 4; B.dt = 0.7; }
+        else if (d < BOSS_R + 2.4 && aci(hedefYon, B.yon) < 0.6) { B.durum = 3; B.dt = 0.55; }
+        else if (d < 12) { B.durum = 1; B.dt = 1.0; }
+        else B.saldiriSayac = 0.4;
+        if (B.durum) A.olaylar.push(['bt', B.durum]);
+      }
+    } else {
+      B.dt -= dt;
+      if (B.durum === 1) { donus(B, hedefYon, 1.0 * dt); if (B.dt <= 0) { B.durum = 2; B.dt = 2.2; A.olaylar.push(['bt', 2]); } }
+      else if (B.durum === 2) {   // ağzından alev
+        donus(B, hedefYon, 0.45 * dt * yavas);
+        canli.forEach(o => {
+          const ox = o.x - agizX, oz = o.z - agizZ, od = Math.hypot(ox, oz);
+          if (od > 11 || aci(Math.atan2(ox, oz), B.yon) > 0.36) return;
+          let yak = 24 * dt * (1 - o.st.zirh) * (o.korumaT > 0 ? 0.5 : 1);
+          if (o.blk && aci(o.yon, Math.atan2(B.x - o.x, B.z - o.z)) < 1.3) yak *= 1 - o.st.blok;
+          o.can -= yak; o.atesYak = (o.atesYak || 0) + yak;
+          if (o.atesYak >= 3) { A.olaylar.push(['alanHit', o.no, Math.round(o.atesYak)]); o.atesYak = 0; }
+          kacisKontrol(o);
+          if (o.can <= 0) olum(o);
+        });
+        if (B.dt <= 0) { B.durum = 0; B.saldiriSayac = 2.2 + rnd() * 1.6; }
+      } else if (B.durum === 3) {   // ısırık
+        if (B.dt <= 0) {
+          canli.forEach(o => { const ox = o.x - B.x, oz = o.z - B.z, od = Math.hypot(ox, oz); if (od < BOSS_R + 2.3 && aci(Math.atan2(ox, oz), B.yon) < 0.75) bossVur(o, 24, Math.sin(B.yon) * 9, Math.cos(B.yon) * 9); });
+          A.olaylar.push(['bt', 6]);
+          B.durum = 0; B.saldiriSayac = 1.6 + rnd();
+        }
+      } else if (B.durum === 4) {   // kuyruk savurma
+        if (B.dt <= 0) {
+          canli.forEach(o => { const ox = o.x - B.x, oz = o.z - B.z, od = Math.hypot(ox, oz) || 0.01; if (od < BOSS_R + 3.3 && aci(Math.atan2(ox, oz), B.yon) > 1.4) bossVur(o, 17, ox / od * 11, oz / od * 11); });
+          A.olaylar.push(['bt', 7]);
+          B.durum = 0; B.saldiriSayac = 1.8 + rnd();
+        }
+      }
+    }
+    // arenada kalsın, sütunlara girmesin
+    A.sutunlar.forEach(c => { const ex = B.x - c.x, ez = B.z - c.z, ed = Math.hypot(ex, ez) || 0.01, r = c.r + BOSS_R; if (ed < r) { B.x = c.x + ex / ed * r; B.z = c.z + ez / ed * r; } });
+    const br = Math.hypot(B.x, B.z), bs = A.R - BOSS_R; if (br > bs) { B.x *= bs / br; B.z *= bs / br; }
+  }
+  // Bot ejderhaya saldırır: yanına / arkasına geçer, aleve karşı kaçar
+  function bossBotAdim(p, dt) {
+    const A = M.arena, B = A.boss, s = p.st.silah;
+    if (p.bossAci == null) p.bossAci = (rnd() < 0.5 ? 1 : -1) * (1.5 + rnd() * 1.1);
+    const mesafe = s.tur === 'atis' ? Math.min(8, s.menzil * 0.6) + BOSS_R : BOSS_R + Math.max(0.6, s.menzil * 0.7) + OYUNCU_R;
+    const a = B.yon + p.bossAci, tx = B.x + Math.sin(a) * mesafe, tz = B.z + Math.cos(a) * mesafe;
+    let hx = tx - p.x, hz = tz - p.z;
+    const ad = Math.hypot(p.x - B.x, p.z - B.z), aa = aci(Math.atan2(p.x - B.x, p.z - B.z), B.yon);
+    if ((B.durum === 1 || B.durum === 2) && aa < 0.7 && ad < 12) { hx = Math.cos(B.yon) * p.yan; hz = -Math.sin(B.yon) * p.yan; }   // alevden kaç
+    const L = Math.hypot(hx, hz);
+    const hiz = HIZ_TEMEL * (1 + p.st.hiz) * (p.hizT > 0 ? 1.5 : 1) * (p.yavasT > 0 ? 0.5 : 1);
+    if (L > 0.3) { p.x += hx / L * hiz * dt; p.z += hz / L * hiz * dt; }
+    p.x += p.vx * dt; p.z += p.vz * dt;
+    const sur = Math.exp(-6 * dt); p.vx *= sur; p.vz *= sur;
+    carpisma(p);
+    const bakis = Math.atan2(B.x - p.x, B.z - p.z); p.yon = bakis; p.blk = false;
+    const menzil = s.tur === 'atis' ? s.menzil * 0.9 + BOSS_R : s.menzil + BOSS_R + 0.1;
+    if (ad < menzil && p.cd <= 0) { p.tepkiT = (p.tepkiT ?? p.tepki) - dt; if (p.tepkiT <= 0) { p.tepkiT = p.tepki; saldiri(p, bakis); } }
+  }
+
+  // =============== DÜELLO TURNUVASI ===============
+  const DUELLO_ALAN_BAS = 25, DUELLO_ALAN_SURE = 20, DUELLO_GERI = 3;
+  const karistir = l => { const a = l.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  function duelloKur() {
+    const A = M.arena;
+    const katilan = M.oyuncular.filter(o => !o.cikti).map(o => o.no);
+    A.duello = { bekleyen: karistir(katilan), kazananlar: [], mac: null, turNo: 1, geri: 0, arasi: 0, durum: 'ara', sampiyon: -1, sonKatil: -1 };
+    M.oyuncular.forEach(o => { o.olu = true; o.trib = true; });
+    duelloMacBaslat(true);
+  }
+  function duelloMacBaslat(ilk) {
+    const A = M.arena, D = A.duello;
+    for (let k = 0; k < 20; k++) {
+      if (D.bekleyen.length >= 2) break;
+      if (D.bekleyen.length === 1) { const b = D.bekleyen.pop(); D.kazananlar.push(b); A.olaylar.push(['dbay', b]); }
+      if (D.kazananlar.length <= 1) { D.sampiyon = D.kazananlar.length ? D.kazananlar[0] : -1; D.durum = 'bitti'; return false; }
+      D.bekleyen = karistir(D.kazananlar); D.kazananlar = []; D.turNo++;
+    }
+    const a = M.oyuncular[D.bekleyen.shift()], b = M.oyuncular[D.bekleyen.shift()], R = A.R;
+    [[a, -1], [b, 1]].forEach(([p, s]) => {
+      Object.assign(p, { olu: false, trib: false, can: p.st.canMax, cd: 0, blk: false, blkT: 0, x: 0, z: s * R * 0.35, yon: s > 0 ? Math.PI : 0, vx: 0, vz: 0, mvx: 0, mvz: 0,
+        manaT: 0, hizT: 0, korumaT: 0, yavasT: 0, sonVuran: -1, sonVuranT: -99, dirildi: false, kacisOldu: false, bicakCd: 0, atesYak: 0, alanYak: 0, bossAci: null });
+    });
+    D.mac = [a.no, b.no]; D.durum = 'mac'; D.geri = ilk ? 0 : DUELLO_GERI; D.sonKatil = -1;
+    A.alanT0 = A.t + D.geri; A.mermiler = [];
+    A.olaylar.push(['dm', a.no, b.no, D.turNo, +a.x.toFixed(2), +a.z.toFixed(2), +b.x.toFixed(2), +b.z.toFixed(2), D.geri]);
+    return true;
+  }
+  function duelloAdim(dt) {
+    const A = M.arena, D = A.duello;
+    if (!D || D.durum === 'bitti') return;
+    if (D.durum === 'mac') {
+      if (D.geri > 0) { D.geri -= dt; return; }
+      const [a, b] = D.mac.map(no => M.oyuncular[no]);
+      if (!a.olu && !b.olu) return;
+      const w = a.olu && b.olu ? null : a.olu ? b : a, l = w === a ? b : a;
+      if (w) { if (D.sonKatil !== w.no) puanVer(w, 1); D.kazananlar.push(w.no); }
+      A.olaylar.push(['dk', w ? w.no : -1, l.no]);
+      D.durum = 'ara'; D.arasi = 2.5; D.mac = null;
+    } else if (D.durum === 'ara') {
+      D.arasi -= dt;
+      if (D.arasi > 0) return;
+      M.oyuncular.forEach(o => { if (!o.cikti) { o.olu = true; o.trib = true; } });
+      A.yerde = []; A.yerDegisti = true;
+      if (!duelloMacBaslat(false) && A.bitisSayac < 0) A.bitisSayac = 1.0;
+    }
+  }
+  // Tribündeki seyirci düellodakilere domates atar
+  const SEYIRCI_DOMATES = { id: 'seyirci.domates', ad: 'Seyirci domatesi', emoji: '🍅', hasar: 6, menzil: 30, bekleme: 2, itme: 5, tur: 'atis', mermi: 'domates', mhiz: 14 };
+  function domatesAt(p, tx, tz, ax, az) {
+    const A = M.arena;
+    if (!A.duello || !M.ayar.oz.duelloKaris || !p.trib || (p.domatesBekle || 0) > A.t) return;
+    p.domatesBekle = A.t + 2;
+    let sx, sz;
+    if (Number.isFinite(ax) && Number.isFinite(az)) { const r = Math.hypot(ax, az) || 1; sx = ax / r * (A.R - 0.4); sz = az / r * (A.R - 0.4); }
+    else { const a = p.no / M.oyuncular.length * Math.PI * 2; sx = Math.sin(a) * (A.R - 0.4); sz = Math.cos(a) * (A.R - 0.4); }
+    const r = Math.hypot(tx, tz), sinir = A.R - 0.4; if (r > sinir) { tx *= sinir / r; tz *= sinir / r; }
+    const dx = tx - sx, dz = tz - sz, d = Math.hypot(dx, dz) || 1;
+    A.mermiler.push({ id: ++A.mermiNo, sahip: p.no, x: sx, z: sz, vx: dx / d * 14, vz: dz / d * 14, omur: d / 14 + 0.3, s: SEYIRCI_DOMATES, mana: false, tur: 'domates' });
+    A.olaylar.push(['sdom', p.no]);
+  }
+
   // Hayalet pelerini: canı azalınca bir kez hızlanır
   function kacisKontrol(q) {
     if (q.olu || q.can <= 0 || q.can >= 30 || q.kacisOldu) return;
@@ -445,18 +672,22 @@ const Motor = (() => {
       const d = Math.hypot(q.x - m.x, q.z - m.z);
       if (d < 2.0) hasarVer(sahip, q, { ...m.s, hasar: m.s.hasar * 0.7, ozel: null }, m.mana, Math.atan2(q.x - m.x, q.z - m.z));
     });
+    if (A.boss && !A.boss.olu && Math.hypot(A.boss.x - m.x, A.boss.z - m.z) < 2 + BOSS_R) bossHasarAl(sahip, { ...m.s, hasar: m.s.hasar * 0.7, ozel: null }, m.mana);
   }
   function alanYaricap(t) {
-    const R = M.arena.R;
-    if (t < ALAN_BAS) return R;
-    const sonra = t - ALAN_BAS - ALAN_SURE - 20;    // en küçük hâlde 20 sn bekler, sonra tamamen kapanır
+    const A = M.arena, R = A.R;
+    if (A.boss) return R;                            // ejderha turunda alan daralmaz (süre sınırı var)
+    const bas = A.duello ? DUELLO_ALAN_BAS : ALAN_BAS, sure = A.duello ? DUELLO_ALAN_SURE : ALAN_SURE;
+    t -= A.alanT0 || 0;
+    if (t < bas) return R;
+    const sonra = t - bas - sure - 20;    // en küçük hâlde 20 sn bekler, sonra tamamen kapanır
     if (sonra > 0) return Math.max(0, ALAN_MIN - sonra * 0.25);
-    return Math.max(ALAN_MIN, R - (R - ALAN_MIN) * Math.min(1, (t - ALAN_BAS) / ALAN_SURE));
+    return Math.max(ALAN_MIN, R - (R - ALAN_MIN) * Math.min(1, (t - bas) / sure));
   }
   const aci = (a, b) => { let d = (a - b) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return Math.abs(d); };
 
   function saldiri(p, yon) {
-    if (p.olu || p.cd > (p.bot ? 0 : 0.12) || M.faz !== 'savas') return;
+    if (p.olu || p.cd > (p.bot ? 0 : 0.12) || M.faz !== 'savas' || (M.arena.duello && M.arena.duello.geri > 0)) return;
     const s = p.st.silah, A = M.arena;
     p.yon = yon; p.cd = s.bekleme; p.sonSaldiri = A.t; p.blk = false;
     A.olaylar.push(['sv', p.no]);
@@ -473,6 +704,11 @@ const Motor = (() => {
       if (sutunArasi(p.x, p.z, q.x, q.z)) return;
       hasarVer(p, q, s, p.manaT > 0, Math.atan2(dx, dz));
     });
+    const B = A.boss;
+    if (B && !B.olu) {
+      const dx = B.x - p.x, dz = B.z - p.z, d = Math.hypot(dx, dz);
+      if (d < s.menzil + BOSS_R + 0.2 && (d < BOSS_R + 1 || aci(Math.atan2(dx, dz), yon) < 1.15)) bossHasarAl(p, s, p.manaT > 0);
+    }
   }
   function sutunArasi(x1, z1, x2, z2) {
     return M.arena.sutunlar.some(c => {
@@ -493,7 +729,7 @@ const Motor = (() => {
     if (q.korumaT > 0) dmg *= 0.5;
     dmg = Math.max(1, Math.round(dmg));
     q.can -= dmg;
-    if (a.no !== q.no) { q.sonVuran = a.no; q.sonVuranT = A.t; }
+    if (a.no !== q.no && !a.olu) { q.sonVuran = a.no; q.sonVuranT = A.t; }
     const itme = (s.itme || 2) * (bloklu ? 0.35 : 1) * (mana ? 1.6 : 1);
     const ix = Math.sin(yon) * itme, iz = Math.cos(yon) * itme;
     if (q.bot) { q.vx += ix; q.vz += iz; } else A.olaylar.push(['it', q.no, +ix.toFixed(2), +iz.toFixed(2)]);
@@ -516,6 +752,7 @@ const Motor = (() => {
     let katil = -1;
     if (q.sonVuran >= 0 && A.t - q.sonVuranT < 10 && !dost(M.oyuncular[q.sonVuran], q)) { katil = q.sonVuran; const k = M.oyuncular[katil]; k.oldurme++; puanVer(k, 1); }
     A.olaylar.push(['ol', q.no, katil]);
+    if (A.duello) A.duello.sonKatil = katil;
     // Silahı ve kalkanı yere düşer: kalanlar alabilir
     const sx = Math.cos(q.yon) * 0.55, sz = -Math.sin(q.yon) * 0.55;
     q.kusam = { ...q.kusam };
@@ -581,8 +818,19 @@ const Motor = (() => {
       }
     });
     // Botlar
-    M.oyuncular.forEach(p => { if (p.bot && !p.olu) botAdim(p, dt); });
+    M.oyuncular.forEach(p => { if (p.bot && !p.olu && !(A.duello && A.duello.geri > 0)) (A.boss && !A.boss.olu ? bossBotAdim : botAdim)(p, dt); });
     // Ekstra özellikler
+    if (A.boss) bossAdim(dt);
+    if (A.duello) {
+      duelloAdim(dt);
+      if (M.ayar.oz.duelloKaris && A.duello.durum === 'mac' && A.duello.geri <= 0) M.oyuncular.forEach(p => {
+        if (!p.bot || !p.trib || p.cikti) return;
+        p.domatesT -= dt; if (p.domatesT > 0) return;
+        p.domatesT = 4 + rnd() * 5;
+        const h = M.oyuncular[A.duello.mac[Math.floor(rnd() * 2)]];
+        domatesAt(p, h.x + (rnd() - 0.5) * 2, h.z + (rnd() - 0.5) * 2);
+      });
+    }
     tuzakAdim(dt);
     if (M.ayar.oz.sandik) sandikAdim(dt);
     if (M.ayar.oz.seyirci) oyAdim(dt, canli.filter(o => !o.olu).length);
@@ -624,6 +872,9 @@ const Motor = (() => {
       for (let k = 0; k < adimSay; k++) {
         m.x += m.vx * dt / adimSay; m.z += m.vz * dt / adimSay;
         if (A.sutunlar.some(c => Math.hypot(c.x - m.x, c.z - m.z) < c.r)) { A.olaylar.push(['mp', m.x, m.z, m.tur]); if (m.s.ozel === 'patla') patla(m, null); return false; }
+        if (A.boss && !A.boss.olu && Math.hypot(A.boss.x - m.x, A.boss.z - m.z) < BOSS_R) {
+          bossHasarAl(M.oyuncular[m.sahip], m.s, m.mana); A.olaylar.push(['mp', m.x, m.z, m.tur]); if (m.s.ozel === 'patla') patla(m, null); return false;
+        }
         const q = M.oyuncular.find(o => !o.olu && o.no !== m.sahip && !dost(M.oyuncular[m.sahip], o) && Math.hypot(o.x - m.x, o.z - m.z) < OYUNCU_R + 0.2);
         if (q) {
           const sahip = M.oyuncular[m.sahip];
@@ -644,7 +895,9 @@ const Motor = (() => {
     // Tur bitti mi?
     const kalan = M.oyuncular.filter(o => !o.olu);
     const bitmeli = takimli() ? new Set(kalan.map(o => o.takim)).size <= 1 : kalan.length <= 1;
-    if (bitmeli && A.bitisSayac < 0) A.bitisSayac = 1.4;
+    if (A.boss) { if (!kalan.length && A.bitisSayac < 0) A.bitisSayac = 1.6; }
+    else if (A.duello) { /* turnuva kendi bitirir */ }
+    else if (bitmeli && A.bitisSayac < 0) A.bitisSayac = 1.4;
     if (A.bitisSayac >= 0) { A.bitisSayac -= dt; if (A.bitisSayac < 0) turBitti(); }
     snap();
   }
@@ -717,6 +970,7 @@ const Motor = (() => {
       const dx = p.x - o.x, dz = p.z - o.z, d = Math.hypot(dx, dz) || 0.01;
       if (d < OYUNCU_R * 2) { p.x = o.x + dx / d * OYUNCU_R * 2; p.z = o.z + dz / d * OYUNCU_R * 2; }
     });
+    if (A.boss && !A.boss.olu) { const B = A.boss, ex = p.x - B.x, ez = p.z - B.z, ed = Math.hypot(ex, ez) || 0.01, r = BOSS_R + OYUNCU_R; if (ed < r) { p.x = B.x + ex / ed * r; p.z = B.z + ez / ed * r; } }
     const r = Math.hypot(p.x, p.z), sinir = A.R - OYUNCU_R;
     if (r > sinir) { p.x *= sinir / r; p.z *= sinir / r; }
   }
@@ -725,11 +979,13 @@ const Motor = (() => {
     const A = M.arena;
     M.tick % 1 === 0 && yolla({
       tip: 'd', f: M.faz, s: +(M.faz === 'geri' ? M.sayac : A.t).toFixed(2), zr: +A.zr.toFixed(2),
-      p: M.oyuncular.map(o => [o.no, +o.x.toFixed(2), +o.z.toFixed(2), +o.yon.toFixed(2), Math.ceil(o.can), (o.blk ? 1 : 0) | (o.manaT > 0 ? 2 : 0) | (o.hizT > 0 ? 4 : 0) | (o.korumaT > 0 ? 8 : 0) | (o.olu ? 16 : 0) | (o.yavasT > 0 ? 32 : 0)]),
+      p: M.oyuncular.map(o => [o.no, +o.x.toFixed(2), +o.z.toFixed(2), +o.yon.toFixed(2), Math.ceil(o.can), (o.blk ? 1 : 0) | (o.manaT > 0 ? 2 : 0) | (o.hizT > 0 ? 4 : 0) | (o.korumaT > 0 ? 8 : 0) | (o.olu ? 16 : 0) | (o.yavasT > 0 ? 32 : 0) | (o.trib ? 64 : 0)]),
       m: A.mermiler.map(m => [m.id, +m.x.toFixed(2), +m.z.toFixed(2), m.tur, +Math.atan2(m.vx, m.vz).toFixed(2)]),
       g: A.gucDegisti ? A.guclar.map(g => [g.id, +g.x.toFixed(2), +g.z.toFixed(2), g.tur]) : undefined,
       y: A.yerDegisti ? A.yerde.map(y => [y.id, +y.x.toFixed(2), +y.z.toFixed(2), y.esya]) : undefined,
       sd: A.sandikDegisti ? (A.sandik ? [A.sandik.id, +A.sandik.x.toFixed(2), +A.sandik.z.toFixed(2)] : 0) : undefined,
+      bs: A.boss ? [+A.boss.x.toFixed(2), +A.boss.z.toFixed(2), +A.boss.yon.toFixed(2), Math.ceil(A.boss.can), A.boss.canMax, A.boss.olu ? 5 : A.boss.durum, Math.max(0, Math.ceil(BOSS_SURE - A.boss.sure))] : undefined,
+      du: A.duello ? [A.duello.mac ? A.duello.mac[0] : -1, A.duello.mac ? A.duello.mac[1] : -1, +Math.max(0, A.duello.geri).toFixed(1), A.duello.turNo, A.duello.bekleyen.length + A.duello.kazananlar.length + (A.duello.mac ? 2 : 0), +Math.max(0, A.t - A.alanT0).toFixed(1)] : undefined,
       mt: A.meteorDegisti ? A.meteorlar.map(m => [m.id, +m.x.toFixed(2), +m.z.toFixed(2), +m.t.toFixed(2)]) : undefined,
       o: A.olaylar.length ? A.olaylar : undefined,
     });
@@ -739,15 +995,23 @@ const Motor = (() => {
   function turBitti() {
     const A = M.arena;
     const kalan = M.oyuncular.filter(o => !o.olu);
-    let sag = null, takimSag = -1;
-    if (takimli()) { const t = new Set(kalan.map(o => o.takim)); if (t.size === 1) { takimSag = kalan[0].takim; puanVer(kalan[0], 2); } }
+    let sag = null, takimSag = -1, bossSonuc = null;
+    if (A.boss) {
+      const B = A.boss, sira = Object.entries(B.hasar).filter(([, h]) => h > 0).sort((a, b) => b[1] - a[1]);
+      sira.slice(0, 3).forEach(([no], k) => { M.oyuncular[+no].puan += [3, 2, 1][k]; });
+      if (B.olu) M.oyuncular.forEach(o => { if (!o.olu) o.puan += 1; });
+      bossSonuc = { oldu: B.olu, kacti: !!B.kacti, hasar: M.oyuncular.map(o => Math.round(B.hasar[o.no] || 0)) };
+    } else if (A.duello) {
+      sag = A.duello.sampiyon >= 0 ? M.oyuncular[A.duello.sampiyon] : null;
+      if (sag) sag.puan += 2;
+    } else if (takimli()) { const t = new Set(kalan.map(o => o.takim)); if (t.size === 1) { takimSag = kalan[0].takim; puanVer(kalan[0], 2); } }
     else { sag = kalan.length === 1 ? kalan[0] : null; if (sag) sag.puan += 2; }
     A.olaylar.push(['bitti']); snap();
     const hedef = M.ayar.hedef, enYuksek = Math.max(...M.oyuncular.map(o => o.puan));
     const liderler = M.oyuncular.filter(o => o.puan === enYuksek);
     const bitti = enYuksek >= hedef && (takimli() ? new Set(liderler.map(o => o.takim)).size === 1 : liderler.length === 1);
     M.faz = 'turSonu'; M.sayac = bitti ? 6 : 8; M.oyunBitti = bitti;
-    yolla({ tip: 'turSonu', sag: sag ? sag.no : -1, oldurme: M.oyuncular.map(o => o.oldurme), puanlar: M.oyuncular.map(o => o.puan), hedef, bitti, sure: M.sayac, kazanan: bitti ? liderler[0].no : -1, takim: takimli(), takimSag });
+    yolla({ tip: 'turSonu', sag: sag ? sag.no : -1, oldurme: M.oyuncular.map(o => o.oldurme), puanlar: M.oyuncular.map(o => o.puan), hedef, bitti, sure: M.sayac, kazanan: bitti ? liderler[0].no : -1, takim: takimli(), takimSag, boss: bossSonuc, duello: !!A.duello });
   }
   function turSonrasi() {
     if (M.oyunBitti) {
@@ -782,9 +1046,12 @@ const Motor = (() => {
       return;
     }
     if (m.tip === 'oy') { if (M.arena) oyVer(p, sayi(m.i) | 0); return; }
+    if (m.tip === 'takasVer') { const d = M.d; if (M.faz === 'takasSec' && d?.takasVer && d.takasVer[p.no] === undefined && Object.values(p.kusam).includes(m.id)) { d.takasVer[p.no] = m.id; draftYolla(); } return; }
+    if (m.tip === 'silahSec') { const d = M.d, x = E.al(m.id); if (M.faz === 'silahSec' && x && silahListesi().includes(x)) { d.silahSec[p.no] = x.id; draftYolla(); } return; }
+    if (m.tip === 'domates') { if (M.arena && M.faz === 'savas') domatesAt(p, sayi(m.x), sayi(m.z), sayi(m.ax), sayi(m.az)); return; }
     if (!M.arena || p.olu) return;
     if (m.tip === 'k') {
-      if (M.faz === 'savas') {
+      if (M.faz === 'savas' && !(M.arena.duello && M.arena.duello.geri > 0)) {
         let x = sayi(m.x), z = sayi(m.z);
         const r = Math.hypot(x, z), sinir = M.arena.R - OYUNCU_R;
         if (r > sinir) { x *= sinir / r; z *= sinir / r; }
@@ -812,7 +1079,7 @@ const Motor = (() => {
     baslat, durdur, adim, girdi, cikis, esyaYeri, kapaliGuncelle, arenaR, siralama: n => siralama(n), statlar: E.statlar,
     SECIM_SURE, ZAR_SURE, ZAR_GOSTER, KARAR_SURE, ALAN_BAS, ALAN_SURE, HIZ_TEMEL, OYUNCU_R, GUC_SURE,
     get M() { return M; }, rastgeleKoy(f) { rnd = f; }, TAKAS_MESAFE: 1.6, ALMA_MESAFE: 1.0,
-    OZ_ADLAR, atesDurum, ATES_R, ATES_DONGU, ATES_UYARI, ATES_YANAR,
+    OZ_ADLAR, atesDurum, BOSS_R, BOSS_SURE, DUELLO_ALAN_BAS, DUELLO_ALAN_SURE, ATES_R, ATES_DONGU, ATES_UYARI, ATES_YANAR,
   };
 })();
 
