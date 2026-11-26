@@ -275,3 +275,11 @@ body.dokun #ipucu { display: none; }
 #oyDugmeler button i { display: block; font-style: normal; font-size: 12px; opacity: .8; }
 #oySure { font-size: 12px; opacity: .8; margin-top: 4px; }
 .setYazi { color: #7ad8ff; }
+
+/* Sürüm 16: takım seçimi */
+.takimBtn.kirmizi { background: #ffd2cc; box-shadow: 0 3px 0 #b0302a; }
+.takimBtn.mavi { background: #cfe2ff; box-shadow: 0 3px 0 #2a5ab0; }
+.takimBtn.secili { outline: 3px solid #4a1a0a; }
+#lobiListe .takimRozet { cursor: default; }
+#lobiListe .takimRozet.degistir { cursor: pointer; }
+#lobiListe li.t0 { background: #ffe8e4; } #lobiListe li.t1 { background: #e4eeff; }

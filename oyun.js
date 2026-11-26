@@ -5,7 +5,7 @@
 // =============================================================
 
 const Oyun = (() => {
-  const SURUM = 15;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
+  const SURUM = 16;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
   const $ = id => document.getElementById(id);
   const E = Esya;
   Sahne.kur($('sahne'));
@@ -29,7 +29,8 @@ const Oyun = (() => {
   try { const o = JSON.parse(localStorage.getItem('zs.oz') || 'null'); if (o && typeof o === 'object') lobi.ayar.oz = { ...ozVarsayilan(), ...o }; } catch (e) { }
   const TAKIM = ['🔴', '🔵'], TAKIM_AD = ['Kırmızı', 'Mavi'];
   const takimli = () => !!oyun?.ayar?.oz?.takim;
-  const tAd = no => (takimli() ? TAKIM[no % 2] + ' ' : '') + oyuncu(no).ad;
+  const takimOf = no => oyuncu(no)?.takim ?? (no % 2);
+  const tAd = no => (takimli() ? TAKIM[takimOf(no)] + ' ' : '') + oyuncu(no).ad;
   let oyun = null;
 
   // ---------- Giriş ----------
@@ -73,7 +74,7 @@ const Oyun = (() => {
   Ag.on('hata', m => { $('girisDurum').textContent = m; $('lobiDurum').textContent = m; });
   Ag.on('oyuncular', () => { if (mod === 'ev') lobiYay(); lobiCiz(); });
   Ag.on('mesaj', m => mesaj(m));
-  Ag.on('evMesaj', (m, id) => { if (oyun && !oyun.bitti) Motor.girdi(id, m); });
+  Ag.on('evMesaj', (m, id) => { if (m?.tip === 'takimSec') { if (!oyun || oyun.bitti) takimSec(id, m.t); return; } if (oyun && !oyun.bitti) Motor.girdi(id, m); });
   Ag.on('koptu', o => { if (mod === 'ev' && oyun && !oyun.bitti) Motor.cikis(o.id); });
   Ag.on('evKoptu', () => menuyeDon('Oda sahibiyle bağlantı koptu.'));
   function eve(m) {
@@ -94,10 +95,37 @@ const Oyun = (() => {
   }
   $('botEkleBtn').onclick = () => { if (yonetici()) { botEkle(); lobiCiz(); } };
   $('botCikarBtn').onclick = () => { if (yonetici() && lobi.botlar.length) { lobi.botlar.pop(); lobiYay(); lobiCiz(); } };
-  function lobiYay() { if (mod === 'ev') Ag.yayinla({ tip: 'lobi', botlar: lobi.botlar, ayar: lobi.ayar, surum: SURUM }); }
+  function lobiYay() { if (mod === 'ev') Ag.yayinla({ tip: 'lobi', botlar: lobi.botlar, ayar: lobi.ayar, takim: lobi.takim, surum: SURUM }); }
+  // Takım modu: herkes kendi takımını seçer; seçmeyen az kişili takıma girer
+  lobi.takim = {};
+  function takimDagit(L) {
+    const t = L.map(p => (lobi.takim?.[p.id] === 0 || lobi.takim?.[p.id] === 1 ? lobi.takim[p.id] : null));
+    const say = [0, 0]; t.forEach(x => { if (x !== null) say[x]++; });
+    return t.map((x, i) => { if (x !== null) return x; const y = say[0] < say[1] ? 0 : say[1] < say[0] ? 1 : i % 2; say[y]++; return y; });
+  }
+  function takimSec(id, t) {
+    if (!yonetici() || !(t === 0 || t === 1)) return;
+    if (!herkes().some(p => p.id === id)) return;
+    lobi.takim = { ...lobi.takim, [id]: t }; lobiYay(); lobiCiz();
+  }
+  $('kirmiziBtn').onclick = () => { if (yonetici()) takimSec(benimId, 0); else Ag.eveGonder({ tip: 'takimSec', t: 0 }); };
+  $('maviBtn').onclick = () => { if (yonetici()) takimSec(benimId, 1); else Ag.eveGonder({ tip: 'takimSec', t: 1 }); };
+  $('lobiListe').addEventListener('click', e => {
+    const r = e.target.closest('.takimRozet'); if (!r || !yonetici() || !lobi.ayar.oz?.takim) return;
+    const L = herkes(), i = +r.dataset.i, p = L[i]; if (!p || !(p.bot || p.id === benimId)) return;
+    takimSec(p.id, 1 - takimDagit(L)[i]);
+  });
   function lobiCiz() {
     const L = herkes();
-    $('lobiListe').innerHTML = L.map((p, i) => `<li style="--r:${hex(Insan.RENKLER[i])}"><span>${lobi.ayar.oz?.takim ? TAKIM[i % 2] + ' ' : ''}${p.bot ? '🤖 ' : ''}${p.id === benimId ? '⭐ ' : ''}${kacis(p.ad)}${p.ses ? ' 🎤' : ''}</span><small>${Insan.RENK_AD[i]}</small></li>`).join('');
+    const tk = lobi.ayar.oz?.takim ? takimDagit(L) : null;
+    $('lobiListe').innerHTML = L.map((p, i) => `<li class="${tk ? 't' + tk[i] : ''}" style="--r:${hex(Insan.RENKLER[i])}"><span>${tk ? `<b class="takimRozet${yonetici() && (p.bot || p.id === benimId) ? ' degistir' : ''}" data-i="${i}" title="${yonetici() && p.bot ? 'Tıkla: botun takımını değiştir' : ''}">${TAKIM[tk[i]]}</b> ` : ''}${p.bot ? '🤖 ' : ''}${p.id === benimId ? '⭐ ' : ''}${kacis(p.ad)}${p.ses ? ' 🎤' : ''}</span><small>${Insan.RENK_AD[i]}</small></li>`).join('');
+    $('takimSatir').classList.toggle('gizli', !tk); $('takimIpucu').classList.toggle('gizli', !tk);
+    if (tk) {
+      const bi = L.findIndex(p => p.id === benimId), benimT = bi >= 0 ? tk[bi] : -1;
+      $('kirmiziBtn').classList.toggle('secili', benimT === 0); $('maviBtn').classList.toggle('secili', benimT === 1);
+      const sk = [tk.filter(x => x === 0).length, tk.filter(x => x === 1).length];
+      $('takimIpucu').textContent = `🔴 Kırmızı: ${sk[0]} kişi · 🔵 Mavi: ${sk[1]} kişi${yonetici() ? ' · Botun takımını değiştirmek için yanındaki 🔴/🔵 işaretine tıkla' : ''}`;
+    }
     $('ayHedef').value = String(lobi.ayar.hedef);
     $('ayHedef').disabled = !yonetici();
     [['ayTur', 'turSay'], ['aySecim', 'secimSure'], ['ayZar', 'zarSure'], ['ayKarar', 'kararSure']].forEach(([el, k]) => { $(el).value = String(lobi.ayar[k] || (k === 'turSay' ? 5 : 10)); $(el).disabled = !yonetici(); });
@@ -216,7 +244,9 @@ const Oyun = (() => {
     if (!yonetici()) return;
     const L = herkes();
     if (L.length < 2) { if (oyun) { oyunTemizle(); ekranGoster('lobi'); lobiCiz(); } $('lobiDurum').textContent = 'En az 2 oyuncu gerekli: bot ekle.'; return; }
-    const liste = L.map((p, i) => ({ id: p.id, ad: p.ad, bot: p.bot, renk: i, ten: (i * 3 + 1) % 5 }));
+    const tk = lobi.ayar.oz?.takim ? takimDagit(L) : null;
+    if (tk && (!tk.includes(0) || !tk.includes(1))) { $('lobiDurum').textContent = '🤝 Takım modunda iki takımda da en az 1 oyuncu olmalı.'; return; }
+    const liste = L.map((p, i) => ({ id: p.id, ad: p.ad, bot: p.bot, renk: i, ten: (i * 3 + 1) % 5, takim: tk ? tk[i] : i % 2 }));
     const geri = mod === 'tek' ? { herkese: m => mesaj(m) } : { herkese: m => Ag.yayinla(m) };
     Motor.baslat(liste, lobi.ayar, geri);
   }
@@ -276,7 +306,7 @@ const Oyun = (() => {
     E.setAc(!!m.ayar.oz?.set);
     m.oyuncular.forEach(p => {
       const h = Insan.yap(p.renk, p.ten);
-      const et = Sahne.etiketYap((m.ayar.oz?.takim ? TAKIM[p.no % 2] + ' ' : '') + p.ad, hex(Insan.RENKLER[p.renk]));
+      const et = Sahne.etiketYap((m.ayar.oz?.takim ? TAKIM[p.takim ?? p.no % 2] + ' ' : '') + p.ad, hex(Insan.RENKLER[p.renk]));
       h.add(et);
       Sahne.scene.add(h);
       oyun.k.set(p.no, { h, et, x: 0, z: 0, yon: 0, hx: 0, hz: 0, hyon: 0, can: 1, canMax: 1, bayrak: 0, kusam: {}, efekt: null });
@@ -301,6 +331,7 @@ const Oyun = (() => {
     switch (m.tip) {
       case 'lobi':
         lobi = { botlar: m.botlar || [], ayar: { secimSure: 10, zarSure: 10, kararSure: 10, turSay: 5, kapali: [], ...m.ayar, guc: m.ayar.guc || gucVarsayilan(), oz: { ...ozVarsayilan(), ...(m.ayar.oz || {}) } } };
+        lobi.takim = m.takim || {};
         if (!Ag.evMi && m.surum !== SURUM) $('lobiDurum').innerHTML = `⚠️ <b>Sürümün farklı!</b> Oda sahibi: ${m.surum ?? 'eski'}, sen: ${SURUM}. Daha eski olan sayfayı yenilesin (gerekirse kapatıp aç).`;
         if (!oyun || oyun.bitti) lobiCiz();
         break;
@@ -683,7 +714,7 @@ const Oyun = (() => {
     buyukYazi('HAZIR OL!', ben ? `${ben.st.silah.emoji} ${ben.st.silah.ad} · ❤️ ${ben.st.canMax}${(ben.st.setler || []).map(x => ' · ' + x.emoji + ' ' + x.ad + ' seti').join('')}` : '', 1200);
     ekstraKur(m.tuzak, m.R);
     if (m.tuzak) { const [b, a] = TUZAK_AD[m.tuzak.tur]; setTimeout(() => { if (oyun?.faz === 'arena') { buyukYazi(b, a, 1600); akis(`${b} ${a}`); } }, 1400); }
-    if (takimli() && bn >= 0) akis(`🤝 Takımın: ${TAKIM[bn % 2]} ${TAKIM_AD[bn % 2]}. Takım arkadaşına vurulmaz.`);
+    if (takimli() && bn >= 0) akis(`🤝 Takımın: ${TAKIM[takimOf(bn)]} ${TAKIM_AD[takimOf(bn)]}. Takım arkadaşına vurulmaz.`);
     Sahne.cosku(1.5);
   }
   // ---------- Ekstra özellikler: tuzak, ödül sandığı, meteor, seyirci oyu ----------
@@ -879,7 +910,7 @@ const Oyun = (() => {
         v.olu = true;
         Sahne.partikul(v.h.position.x, 1, v.h.position.z, 0xffd36a, 24, 5, 0.9);
         Ses.olum(); Sahne.cosku(2.5);
-        if (katil >= 0) { if (takimli()) oyun.puan.forEach((_, n) => { if (n % 2 === katil % 2) oyun.puan[n]++; }); else oyun.puan[katil]++; akis(`⚔️ <b style="color:${renkCss(katil)}">${kacis(oyuncu(katil).ad)}</b> → <b style="color:${renkCss(no)}">${kacis(oyuncu(no).ad)}</b> yere serildi! (+1)`, katil === bn ? 'iyi' : no === bn ? 'kotu' : ''); }
+        if (katil >= 0) { if (takimli()) oyun.puan.forEach((_, n) => { if (takimOf(n) === takimOf(katil)) oyun.puan[n]++; }); else oyun.puan[katil]++; akis(`⚔️ <b style="color:${renkCss(katil)}">${kacis(oyuncu(katil).ad)}</b> → <b style="color:${renkCss(no)}">${kacis(oyuncu(no).ad)}</b> yere serildi! (+1)`, katil === bn ? 'iyi' : no === bn ? 'kotu' : ''); }
         else akis(`💀 <b style="color:${renkCss(no)}">${kacis(oyuncu(no).ad)}</b> alanın dışında yandı`, no === bn ? 'kotu' : '');
         if (no === bn && oyun.oy) setTimeout(() => { if (oyun?.oy) oyPanelAc(); }, 1200);
         if (no === bn) { if (ben) ben.olu = true; buyukYazi('YERE SERİLDİN!', katil >= 0 ? `${oyuncu(katil).ad} seni devirdi` : 'Alanın dışında kaldın', 2000); document.body.classList.add('izliyor'); oyun.izle = katil >= 0 ? katil : -1; }
@@ -1068,7 +1099,7 @@ const Oyun = (() => {
     if (dokun && (dokunVur.basili || dokunKalkan.basili)) {
       let hedef = null, enA = 0.7, menzil = s.tur === 'atis' ? s.menzil : s.menzil + 2.5;
       oyun.k.forEach((o, no) => {
-        if (no === benimNo() || o.olu || (takimli() && no % 2 === benimNo() % 2)) return;
+        if (no === benimNo() || o.olu || (takimli() && takimOf(no) === takimOf(benimNo()))) return;
         const d = Math.hypot(o.x - ben.x, o.z - ben.z); if (d > menzil) return;
         let fa = Math.atan2(o.x - ben.x, o.z - ben.z) - oyun.yaw; fa = Math.abs(Math.atan2(Math.sin(fa), Math.cos(fa)));
         if (fa < enA) { enA = fa; hedef = o; }
@@ -1162,14 +1193,14 @@ const Oyun = (() => {
       const sirali = oyun.oyuncular.slice().sort((a, b) => m.puanlar[b.no] - m.puanlar[a.no]);
       $('turTablo').innerHTML = '<tr><th>Oyuncu</th><th>⚔️</th><th>Bu tur</th><th>Puan</th><th></th></tr>' + sirali.map(p => {
         const arti = m.puanlar[p.no] - (oyun.turBasi?.[p.no] ?? 0);
-        return `<tr class="${p.no === bn ? 'ben' : ''}"><td class="ad" style="--r:${renkCss(p.no)}">${p.no === sagKalan || (m.takim && m.takimSag === p.no % 2) ? '👑 ' : ''}${kacis(tAd(p.no))}</td><td>${m.oldurme[p.no]}</td><td class="arti">${arti ? '+' + arti : ''}</td><td><b>${m.puanlar[p.no]}</b></td><td><div class="cubuk"><i style="width:${Math.min(100, m.puanlar[p.no] / m.hedef * 100)}%"></i></div></td></tr>`;
+        return `<tr class="${p.no === bn ? 'ben' : ''}"><td class="ad" style="--r:${renkCss(p.no)}">${p.no === sagKalan || (m.takim && m.takimSag === takimOf(p.no)) ? '👑 ' : ''}${kacis(tAd(p.no))}</td><td>${m.oldurme[p.no]}</td><td class="arti">${arti ? '+' + arti : ''}</td><td><b>${m.puanlar[p.no]}</b></td><td><div class="cubuk"><i style="width:${Math.min(100, m.puanlar[p.no] / m.hedef * 100)}%"></i></div></td></tr>`;
       }).join('');
       ekranGoster('turSonu');
       let kalan = Math.round(m.sure - 1.5);
       const yaz = () => { $('turSonuAlt').textContent = m.bitti ? `🏆 ${oyuncu(m.kazanan).ad} hedefe ulaştı!` : `${m.hedef} puana ilk ulaşan kazanır · Yeni eşya seçimi ${Math.max(0, kalan)} sn sonra`; };
       yaz(); clearInterval(oyun.turSayac); oyun.turSayac = setInterval(() => { kalan--; yaz(); }, 1000);
     }, 1500);
-    if (m.takim && bn >= 0 && m.takimSag === bn % 2) { buyukYazi('TAKIMIN KAZANDI! 👑', 'Takımdaki herkese +2 puan', 1500); Ses.kazandi(); Sahne.cosku(4); }
+    if (m.takim && bn >= 0 && m.takimSag === takimOf(bn)) { buyukYazi('TAKIMIN KAZANDI! 👑', 'Takımdaki herkese +2 puan', 1500); Ses.kazandi(); Sahne.cosku(4); }
     else if (sagKalan === bn && bn >= 0) { buyukYazi('AYAKTA KALDIN! 👑', '+2 puan', 1500); Ses.kazandi(); Sahne.cosku(4); }
     else { Ses.alkis(); Sahne.cosku(3); }
     puanTabloCiz();
@@ -1178,7 +1209,7 @@ const Oyun = (() => {
     oyun.bitti = true;
     clearInterval(oyun.turSayac);
     const bn = benimNo(), kaz = m.sira[0].no;
-    $('sonucBaslik').textContent = m.takim ? (m.kazananTakim === bn % 2 ? 'TAKIMIN KAZANDI! 🏆' : `${TAKIM[m.kazananTakim]} ${TAKIM_AD[m.kazananTakim].toLocaleUpperCase('tr')} TAKIM KAZANDI!`) : kaz === bn ? 'KAZANDIN! 🏆' : `${oyuncu(kaz).ad.toLocaleUpperCase('tr')} KAZANDI!`;
+    $('sonucBaslik').textContent = m.takim ? (bn >= 0 && m.kazananTakim === takimOf(bn) ? 'TAKIMIN KAZANDI! 🏆' : `${TAKIM[m.kazananTakim]} ${TAKIM_AD[m.kazananTakim].toLocaleUpperCase('tr')} TAKIM KAZANDI!`) : kaz === bn ? 'KAZANDIN! 🏆' : `${oyuncu(kaz).ad.toLocaleUpperCase('tr')} KAZANDI!`;
     $('sonucSira').innerHTML = m.sira.map(s => `<li style="color:${renkCss(s.no)}"><span style="color:#2a1608">${kacis(tAd(s.no))}${s.no === bn ? ' ⭐' : ''} · <b>${s.puan}</b> puan</span></li>`).join('');
     $('tekrarBtn').classList.toggle('gizli', !yonetici());
     $('sonucBekle').classList.toggle('gizli', yonetici());
@@ -1189,7 +1220,7 @@ const Oyun = (() => {
     oyun.faz = 'bitti'; oyun.kutlayan = kaz;
     ekranGoster('sonuc');
     if (document.pointerLockElement) document.exitPointerLock();
-    ((m.takim ? m.kazananTakim === bn % 2 : kaz === bn) ? Ses.kazandi : Ses.kaybetti)();
+    ((m.takim ? bn >= 0 && m.kazananTakim === takimOf(bn) : kaz === bn) ? Ses.kazandi : Ses.kaybetti)();
     ekstraTemizle(); $('oyPanel').classList.add('gizli');
   }
 

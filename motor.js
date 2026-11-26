@@ -28,19 +28,19 @@ const Motor = (() => {
   const kapaliEtkin = () => M.ayar.oz.ozel ? M.ayar.kapali : [...M.ayar.kapali, ...E.OZEL_IDLER];
   // Takım modu: çift numaralılar 🔴, tek numaralılar 🔵
   const takimli = () => !!M.ayar.oz.takim;
-  const dost = (a, b) => takimli() && a !== b && a.no % 2 === b.no % 2;
-  function puanVer(p, n) { if (takimli()) M.oyuncular.forEach(o => { if (o.no % 2 === p.no % 2) o.puan += n; }); else p.puan += n; }
+  const dost = (a, b) => takimli() && a !== b && a.takim === b.takim;
+  function puanVer(p, n) { if (takimli()) M.oyuncular.forEach(o => { if (o.takim === p.takim) o.puan += n; }); else p.puan += n; }
 
   function baslat(liste, ayar, g, secenek = {}) {
     durdur();
     geri = g; rnd = secenek.rastgele || Math.random;
     M = {
       ayar: { hedef: ayar.hedef || 5, guc: ayar.guc || {}, secimSure: +ayar.secimSure || SECIM_SURE, zarSure: +ayar.zarSure || ZAR_SURE, kararSure: +ayar.kararSure || KARAR_SURE, turSay: +ayar.turSay || 5, kapali: Array.isArray(ayar.kapali) ? ayar.kapali.slice() : [], oz: ozDuzelt(ayar.oz) },
-      oyuncular: liste.map((p, i) => ({ no: i, id: p.id, ad: p.ad, bot: !!p.bot, renk: p.renk ?? i, ten: p.ten ?? (i % 5), puan: 0, kusam: {} })),
+      oyuncular: liste.map((p, i) => ({ no: i, id: p.id, ad: p.ad, bot: !!p.bot, renk: p.renk ?? i, ten: p.ten ?? (i % 5), puan: 0, kusam: {}, takim: p.takim === 0 || p.takim === 1 ? p.takim : i % 2 })),
       faz: 'bos', draftNo: 0, t: 0, tick: 0,
     };
     E.setAc(M.ayar.oz.set);
-    yolla({ tip: 'basla', oyuncular: M.oyuncular.map(o => ({ no: o.no, id: o.id, ad: o.ad, bot: o.bot, renk: o.renk, ten: o.ten })), ayar: M.ayar });
+    yolla({ tip: 'basla', oyuncular: M.oyuncular.map(o => ({ no: o.no, id: o.id, ad: o.ad, bot: o.bot, renk: o.renk, ten: o.ten, takim: o.takim })), ayar: M.ayar });
     draftBaslat();
     if (!secenek.elle) {
       let son = Date.now(), birikim = 0;
@@ -639,7 +639,7 @@ const Motor = (() => {
     });
     // Tur bitti mi?
     const kalan = M.oyuncular.filter(o => !o.olu);
-    const bitmeli = takimli() ? new Set(kalan.map(o => o.no % 2)).size <= 1 : kalan.length <= 1;
+    const bitmeli = takimli() ? new Set(kalan.map(o => o.takim)).size <= 1 : kalan.length <= 1;
     if (bitmeli && A.bitisSayac < 0) A.bitisSayac = 1.4;
     if (A.bitisSayac >= 0) { A.bitisSayac -= dt; if (A.bitisSayac < 0) turBitti(); }
     snap();
@@ -736,12 +736,12 @@ const Motor = (() => {
     const A = M.arena;
     const kalan = M.oyuncular.filter(o => !o.olu);
     let sag = null, takimSag = -1;
-    if (takimli()) { const t = new Set(kalan.map(o => o.no % 2)); if (t.size === 1) { takimSag = kalan[0].no % 2; puanVer(kalan[0], 2); } }
+    if (takimli()) { const t = new Set(kalan.map(o => o.takim)); if (t.size === 1) { takimSag = kalan[0].takim; puanVer(kalan[0], 2); } }
     else { sag = kalan.length === 1 ? kalan[0] : null; if (sag) sag.puan += 2; }
     A.olaylar.push(['bitti']); snap();
     const hedef = M.ayar.hedef, enYuksek = Math.max(...M.oyuncular.map(o => o.puan));
     const liderler = M.oyuncular.filter(o => o.puan === enYuksek);
-    const bitti = enYuksek >= hedef && (takimli() ? new Set(liderler.map(o => o.no % 2)).size === 1 : liderler.length === 1);
+    const bitti = enYuksek >= hedef && (takimli() ? new Set(liderler.map(o => o.takim)).size === 1 : liderler.length === 1);
     M.faz = 'turSonu'; M.sayac = bitti ? 6 : 8; M.oyunBitti = bitti;
     yolla({ tip: 'turSonu', sag: sag ? sag.no : -1, oldurme: M.oyuncular.map(o => o.oldurme), puanlar: M.oyuncular.map(o => o.puan), hedef, bitti, sure: M.sayac, kazanan: bitti ? liderler[0].no : -1, takim: takimli(), takimSag });
   }
@@ -749,7 +749,7 @@ const Motor = (() => {
     if (M.oyunBitti) {
       const sira = M.oyuncular.slice().sort((a, b) => b.puan - a.puan).map(o => ({ no: o.no, puan: o.puan }));
       M.faz = 'bitti';
-      yolla({ tip: 'bitti', sira, takim: takimli(), kazananTakim: takimli() ? sira[0].no % 2 : -1 });
+      yolla({ tip: 'bitti', sira, takim: takimli(), kazananTakim: takimli() ? M.oyuncular[sira[0].no].takim : -1 });
       return;
     }
     draftBaslat();
