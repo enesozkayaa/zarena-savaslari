@@ -5,7 +5,7 @@
 // =============================================================
 
 const Oyun = (() => {
-  const SURUM = 14;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
+  const SURUM = 15;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
   const $ = id => document.getElementById(id);
   const E = Esya;
   Sahne.kur($('sahne'));
@@ -22,7 +22,7 @@ const Oyun = (() => {
 
   let mod = null, benimId = null;
   const gucVarsayilan = () => ({ mana: true, hiz: true, can: true, koruma: true });
-  const OZ = [['tuzak', '🔪 Tuzaklı arena', 'dönen bıçak, ateş ya da buzlu zemin'], ['ozel', '✨ Özel eşyalar', 'buz kılıcı, vampir hançeri, karpuz bombası…'], ['set', '🧩 Eşya setleri', 'aynı setten 2 parça giyen ek güç alır'],
+  const OZ = [['tuzak', '🔪 Tuzaklı arena', 'dönen bıçaklar ya da ateş fışkıranlar'], ['ozel', '✨ Özel eşyalar', 'buz kılıcı, vampir hançeri, karpuz bombası…'], ['set', '🧩 Eşya setleri', 'aynı setten 2 parça giyen ek güç alır'],
     ['sandik', '🎁 Ödül sandığı', 'arenaya efsane silah / kalkan düşer'], ['seyirci', '👥 Seyirci oyu', 'ölenler oylayıp arenayı karıştırır'], ['takim', '🤝 Takım modu', '🔴 kırmızı - 🔵 mavi, takım arkadaşına vurulmaz'], ['joker', '🃏 Zar jokeri', 'ilk zarda 6 atan bir turda 2 eşya alır']];
   const ozVarsayilan = () => ({ tuzak: true, ozel: true, set: true, sandik: true, seyirci: true, takim: false, joker: true });
   let lobi = { botlar: [], ayar: { hedef: 5, guc: gucVarsayilan(), secimSure: 10, zarSure: 10, kararSure: 10, turSay: 5, kapali: [], oz: ozVarsayilan() } };

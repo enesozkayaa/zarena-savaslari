@@ -271,7 +271,7 @@ const Motor = (() => {
   // ---------- Tuzaklı arena ----------
   const ATES_DONGU = 6, ATES_UYARI = 3.6, ATES_YANAR = 4.8, ATES_R = 1.15;
   function tuzakHazirla(R, sutunlar, n) {
-    const tur = ['bicak', 'ates', 'buz'][Math.floor(rnd() * 3)];
+    const tur = ['bicak', 'ates'][Math.floor(rnd() * 2)];   // buzlu arena çıkarıldı (çok kayıyordu)
     const t = { tur };
     if (tur === 'bicak') { t.hiz = 0.75; t.L = +(R * 0.42).toFixed(2); }
     if (tur === 'ates') {
