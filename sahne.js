@@ -39,7 +39,7 @@ const Sahne = (() => {
     isik = new THREE.DirectionalLight(0xfff2dd, 1.6);
     isik.position.set(14, 30, 10); isik.castShadow = true;
     isik.shadow.mapSize.set(telefon ? 1024 : 2048, telefon ? 1024 : 2048);
-    Object.assign(isik.shadow.camera, { left: -28, right: 28, top: 28, bottom: -28, near: 1, far: 80 });
+    Object.assign(isik.shadow.camera, { left: -36, right: 36, top: 36, bottom: -36, near: 1, far: 90 });
     scene.add(isik);
     // Uzak zemin
     const yer = new THREE.Mesh(new THREE.CircleGeometry(160, 40), new THREE.MeshStandardMaterial({ color: 0x8ab060, roughness: 1 }));

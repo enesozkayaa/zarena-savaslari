@@ -246,8 +246,9 @@ const Motor = (() => {
   }
   function arenaBaslat() {
     kararlariBitir();
-    const n = M.oyuncular.length, R = 10 + n * 1.0;
+    const n = M.oyuncular.length, R = arenaR(n);
     const sutunlar = [0, 1, 2, 3].map(k => { const a = Math.PI / 4 + k * Math.PI / 2; return { x: Math.sin(a) * R * 0.5, z: Math.cos(a) * R * 0.5, r: SUTUN_R }; });
+    if (R >= 18) [0, 1, 2, 3].forEach(k => { const a = Math.PI / 8 + k * Math.PI / 2; sutunlar.push({ x: Math.sin(a) * R * 0.74, z: Math.cos(a) * R * 0.74, r: SUTUN_R }); });   // büyük arenada saklanacak ek sütunlar
     M.arena = { R, zr: R, sutunlar, t: 0, mermiler: [], guclar: [], mermiNo: 0, gucNo: 0, gucSayac: 4, olaylar: [], bitisSayac: -1, gucDegisti: true, yerde: [], yerNo: 0, yerDegisti: true,
       tuzak: M.ayar.oz.tuzak ? tuzakHazirla(R, sutunlar, n) : null, sandik: null, sandikNo: 0, sandikSayac: 12, sandikDegisti: false,
       oy: null, oySayac: 12, meteorlar: [], meteorNo: 0, meteorDegisti: false };
@@ -264,6 +265,8 @@ const Motor = (() => {
     M.faz = 'geri'; M.sayac = GERI;
     yolla({ tip: 'arena', R, sutunlar, oyuncular: M.oyuncular.map(o => ({ no: o.no, x: o.x, z: o.z, yon: o.yon, can: o.can, canMax: o.st.canMax, kusam: o.kusam })), guc: M.ayar.guc, tuzak: M.arena.tuzak });
   }
+  // Arena yarıçapı (eskiden 10 + n idi; daha geniş alan)
+  function arenaR(n) { return +(14 + n * 1.3).toFixed(1); }
   const aktifGuclar = () => GUC_TUR.filter(k => M.ayar.guc[k]);
   // ---------- Tuzaklı arena ----------
   const ATES_DONGU = 6, ATES_UYARI = 3.6, ATES_YANAR = 4.8, ATES_R = 1.15;
@@ -493,7 +496,7 @@ const Motor = (() => {
     A.olaylar.push(['hit', q.no, dmg, bloklu ? 1 : 0, mana ? 1 : 0]);
     // Özel eşyalar
     if (s.ozel === 'don') q.yavasT = Math.max(q.yavasT || 0, 2);
-    if (s.ozel === 'vampir' && a !== q && !a.olu) { const c = Math.max(1, Math.round(dmg * 0.5)); a.can = Math.min(a.st.canMax, a.can + c); A.olaylar.push(['iyi', a.no, c]); }
+    if (s.ozel === 'vampir' && a !== q && !a.olu) { const c = Math.max(1, Math.round(dmg * 0.2)); a.can = Math.min(a.st.canMax, a.can + c); A.olaylar.push(['iyi', a.no, c]); }
     if (bloklu && q.st.kalkan?.ozel === 'diken' && s.tur === 'yakin' && a !== q && !a.olu) {
       const r = Math.max(1, Math.round(ham * 0.4)); a.can -= r; a.sonVuran = q.no; a.sonVuranT = A.t;
       A.olaylar.push(['hit', a.no, r, 0, 0]); if (a.can <= 0) olum(a);
@@ -802,7 +805,7 @@ const Motor = (() => {
   }
 
   return {
-    baslat, durdur, adim, girdi, cikis, esyaYeri, kapaliGuncelle, siralama: n => siralama(n), statlar: E.statlar,
+    baslat, durdur, adim, girdi, cikis, esyaYeri, kapaliGuncelle, arenaR, siralama: n => siralama(n), statlar: E.statlar,
     SECIM_SURE, ZAR_SURE, ZAR_GOSTER, KARAR_SURE, ALAN_BAS, ALAN_SURE, HIZ_TEMEL, OYUNCU_R, GUC_SURE,
     get M() { return M; }, rastgeleKoy(f) { rnd = f; }, TAKAS_MESAFE: 1.6, ALMA_MESAFE: 1.0,
     OZ_ADLAR, atesDurum, ATES_R, ATES_DONGU, ATES_UYARI, ATES_YANAR,

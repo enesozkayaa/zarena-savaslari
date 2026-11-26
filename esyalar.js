@@ -153,13 +153,13 @@ const Esya = (() => {
 
   // ---------- ÖZEL GÜÇLÜ EŞYALAR (lobide "✨ Özel eşyalar" açıksa masaya çıkar) ----------
   e('silah', 'buzkilic', 'Buz kılıcı', '❄️', 8, { hasar: 16, menzil: 2.0, bekleme: 0.6, itme: 3, tur: 'yakin', ozel: 'don', ozelYazi: '❄️ Vurduğunu 2 sn yavaşlatır' }, 'kilic', 0x9ad8ff);
-  e('silah', 'vampir', 'Vampir hançeri', '🧛', 8, { hasar: 12, menzil: 1.4, bekleme: 0.32, itme: 1, tur: 'yakin', ozel: 'vampir', ozelYazi: '🩸 Verdiğin hasarın yarısı kadar can kazanırsın' }, 'hancer', 0xb0102a);
+  e('silah', 'vampir', 'Vampir hançeri', '🧛', 8, { hasar: 12, menzil: 1.4, bekleme: 0.32, itme: 1, tur: 'yakin', ozel: 'vampir', ozelYazi: '🩸 Verdiğin hasarın %20si kadar can kazanırsın' }, 'hancer', 0xb0102a);
   e('silah', 'bomba', 'Karpuz bombası', '💣', 7, { hasar: 14, menzil: 10, bekleme: 1.2, itme: 8, tur: 'atis', mermi: 'bomba', mhiz: 11, ozel: 'patla', ozelYazi: '💥 Çarptığı yerde patlar, çevresindekilere de vurur' }, 'torba', 0x2a8a3a);
   e('kafa', 'anka', 'Anka tüyü tacı', '🔥', 9, { can: 10, zirh: 0.04, ozel: 'dirilis', ozelYazi: '🔥 Arenada bir kez ölümden döner (30 canla)' }, 'tac', 0xff6a1a);
   e('kalkan', 'dikenli', 'Dikenli kalkan', '🌵', 7, { blok: 0.6, can: 5, ozel: 'diken', ozelYazi: '🌵 Kalkanla tuttuğun yakın vuruşun bir kısmı vurana döner' }, 'kule', 0x5a7a2a);
   e('govde', 'hayalet', 'Hayalet pelerini', '👻', 8, { can: 30, hiz: 0.08, ozel: 'kacis', ozelYazi: '👻 Canın 20 altına düşünce 3 sn hızlanıp kaçarsın' }, 'pelerin', 0xe8e8ff);
 
-  // ---------- SETLER: aynı setten 3 parça giyen ek güç alır (lobide "🧩 Eşya setleri" açıksa) ----------
+  // ---------- SETLER: aynı setten 2 parça giyen ek güç alır (lobide "🧩 Eşya setleri" açıksa) ----------
   const SETLER = [
     { id: 'sovalye', ad: 'Şövalye', emoji: '🛡️', parca: ['kafa.sovalye', 'govde.zincir', 'govde.plaka', 'bacak.plaka', 'bacak.zincir', 'ayak.demir', 'kalkan.demir', 'silah.kilic'], bonus: { can: 25, zirh: 0.05 }, yazi: '+25 can, +%5 zırh' },
     { id: 'ninja', ad: 'Ninja', emoji: '🥷', parca: ['kafa.ninja', 'bacak.ninja', 'silah.hancer', 'silah.katana', 'ayak.spor', 'govde.smokin'], bonus: { hiz: 0.15, hasar: 0.1 }, yazi: '+%15 hız, +%10 hasar' },
@@ -172,6 +172,7 @@ const Esya = (() => {
     { id: 'altin', ad: 'Altın', emoji: '👑', parca: ['govde.altin', 'kalkan.altin', 'kafa.tac', 'ayak.kanatli'], bonus: { can: 20, hasar: 0.1 }, yazi: '+20 can, +%10 hasar' },
   ];
   let SET_ACIK = false;
+  const SET_PARCA = 2;            // setten kaç parça giyince bonus gelir
   // Bu kuşamda hangi setten kaç parça var (farklı yuvalarda)
   function setDurum(kusam) {
     return SETLER.map(s => ({ s, n: YUVALAR.filter(y => s.parca.includes(kusam?.[y])).length })).filter(x => x.n > 0);
@@ -187,7 +188,7 @@ const Esya = (() => {
     let can = CAN_TEMEL, zirh = 0, hiz = 0, hasarK = 1;
     YUVALAR.forEach(y => { const x = HARITA[kusam?.[y]]; if (!x) return; can += x.can || 0; zirh += x.zirh || 0; hiz += x.hiz || 0; });
     const setler = [];
-    if (SET_ACIK) setDurum(kusam).forEach(({ s, n }) => { if (n < 3) return; setler.push(s); const b = s.bonus; can += b.can || 0; zirh += b.zirh || 0; hiz += b.hiz || 0; hasarK *= 1 + (b.hasar || 0); });
+    if (SET_ACIK) setDurum(kusam).forEach(({ s, n }) => { if (n < SET_PARCA) return; setler.push(s); const b = s.bonus; can += b.can || 0; zirh += b.zirh || 0; hiz += b.hiz || 0; hasarK *= 1 + (b.hasar || 0); });
     const silah = HARITA[kusam?.silah] || YUMRUK;
     const kalkan = HARITA[kusam?.kalkan] || null;
     return { canMax: Math.round(can), zirh: Math.min(0.5, zirh), hiz: Math.max(-0.35, Math.min(0.6, hiz)), silah, kalkan, blok: kalkan ? kalkan.blok : 0.2, yansit: !!kalkan?.yansit, hasarK, setler };
@@ -233,7 +234,7 @@ const Esya = (() => {
   }
 
   return { YUVALAR, YUVA_AD, YUVA_EMOJI, LISTE: L, HARITA, YUMRUK, CAN_TEMEL, statlar, turSayisi, draftHazirla, enKotu, deger, al: id => HARITA[id],
-    SETLER, setDurum, setleriBul, OZEL_IDLER: L.filter(x => x.ozel).map(x => x.id), setAc(b) { SET_ACIK = !!b; }, get SET_ACIK() { return SET_ACIK; } };
+    SETLER, SET_PARCA, setDurum, setleriBul, OZEL_IDLER: L.filter(x => x.ozel).map(x => x.id), setAc(b) { SET_ACIK = !!b; }, get SET_ACIK() { return SET_ACIK; } };
 })();
 
 if (typeof module !== 'undefined') module.exports = Esya;

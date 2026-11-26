@@ -5,7 +5,7 @@
 // =============================================================
 
 const Oyun = (() => {
-  const SURUM = 13;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
+  const SURUM = 14;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
   const $ = id => document.getElementById(id);
   const E = Esya;
   Sahne.kur($('sahne'));
@@ -22,7 +22,7 @@ const Oyun = (() => {
 
   let mod = null, benimId = null;
   const gucVarsayilan = () => ({ mana: true, hiz: true, can: true, koruma: true });
-  const OZ = [['tuzak', '🔪 Tuzaklı arena', 'dönen bıçak, ateş ya da buzlu zemin'], ['ozel', '✨ Özel eşyalar', 'buz kılıcı, vampir hançeri, karpuz bombası…'], ['set', '🧩 Eşya setleri', 'aynı setten 3 parça giyen ek güç alır'],
+  const OZ = [['tuzak', '🔪 Tuzaklı arena', 'dönen bıçak, ateş ya da buzlu zemin'], ['ozel', '✨ Özel eşyalar', 'buz kılıcı, vampir hançeri, karpuz bombası…'], ['set', '🧩 Eşya setleri', 'aynı setten 2 parça giyen ek güç alır'],
     ['sandik', '🎁 Ödül sandığı', 'arenaya efsane silah / kalkan düşer'], ['seyirci', '👥 Seyirci oyu', 'ölenler oylayıp arenayı karıştırır'], ['takim', '🤝 Takım modu', '🔴 kırmızı - 🔵 mavi, takım arkadaşına vurulmaz'], ['joker', '🃏 Zar jokeri', 'ilk zarda 6 atan bir turda 2 eşya alır']];
   const ozVarsayilan = () => ({ tuzak: true, ozel: true, set: true, sandik: true, seyirci: true, takim: false, joker: true });
   let lobi = { botlar: [], ayar: { hedef: 5, guc: gucVarsayilan(), secimSure: 10, zarSure: 10, kararSure: 10, turSay: 5, kapali: [], oz: ozVarsayilan() } };
@@ -323,7 +323,7 @@ const Oyun = (() => {
     ekstraTemizle(); $('oyPanel').classList.add('gizli');
     yerdeCiz([]); $('alYazi').classList.add('gizli'); $('alBtn').classList.add('gizli'); $('alYazi').dataset.y = '';
     Sahne.gucleriTemizle(); Sahne.mermileriCiz([]);
-    Sahne.arenaKur(10 + oyun.oyuncular.length, []);
+    Sahne.arenaKur(Motor.arenaR(oyun.oyuncular.length), []);
     Masa.kur(oyun.oyuncular.length);
     oyuncularMasaya();
     kameraMasa(true);
@@ -515,7 +515,7 @@ const Oyun = (() => {
     if (x.zirh) p.push(`🪨 %${Math.round(x.zirh * 100)} zırh`);
     if (x.hiz) p.push(`${x.hiz > 0 ? '💨 +' : '🐌 -'}${Math.round(Math.abs(x.hiz) * 100)}% hız`);
     if (x.ozel) p.push('✨ ' + x.ozelYazi);
-    if (setAcikMi()) E.setleriBul(x.id).forEach(st => p.push(`🧩 ${st.emoji} ${st.ad} seti: 3 parça = ${st.yazi}`));
+    if (setAcikMi()) E.setleriBul(x.id).forEach(st => p.push(`🧩 ${st.emoji} ${st.ad} seti: ${E.SET_PARCA} parça = ${st.yazi}`));
     return p;
   }
   const setAcikMi = () => (oyun ? !!oyun.ayar?.oz?.set : !!lobi.ayar.oz?.set);
@@ -530,7 +530,7 @@ const Oyun = (() => {
     b.innerHTML = `<div class="ebUst"><span class="ebEmo">${x.emoji}</span><div><div class="ebAd">${kacis(x.ad)}</div><div class="ebYuva">${E.YUVA_EMOJI[x.yuva]} ${E.YUVA_AD[x.yuva]} · <span class="yildiz">${'★'.repeat(yildiz)}${'☆'.repeat(5 - yildiz)}</span></div></div></div>
       <ul>${ozellikYazi(x).map(s => `<li>${s}</li>`).join('')}</ul>
       ${eski ? `<div class="ebEski">Yerine gidecek: ${eski.emoji} ${kacis(eski.ad)}</div>` : ''}
-      ${setAcikMi() ? E.setDurum({ ...kusam, [x.yuva]: x.id }).filter(d => E.setleriBul(x.id).includes(d.s)).map(d => `<div class="ebEski setYazi">🧩 Alırsan ${d.s.emoji} ${d.s.ad} seti: ${d.n}/3${d.n >= 3 ? ' ✅ ' + d.s.yazi : ''}</div>`).join('') : ''}
+      ${setAcikMi() ? E.setDurum({ ...kusam, [x.yuva]: x.id }).filter(d => E.setleriBul(x.id).includes(d.s)).map(d => `<div class="ebEski setYazi">🧩 Alırsan ${d.s.emoji} ${d.s.ad} seti: ${d.n}/${E.SET_PARCA}${d.n >= E.SET_PARCA ? ' ✅ ' + d.s.yazi : ''}</div>`).join('') : ''}
       ${benim ? '<button id="ebAlBtn" class="ana">✅ Bunu al</button>' : ''}`;
     if (benim) $('ebAlBtn').onclick = () => esyaSec(i);
   }
@@ -1184,7 +1184,7 @@ const Oyun = (() => {
     $('sonucBekle').classList.toggle('gizli', yonetici());
     // Kazanan masanın önünde kutlama yapar
     yerdeCiz([]); $('alYazi').classList.add('gizli'); $('alBtn').classList.add('gizli'); $('alYazi').dataset.y = '';
-    Sahne.gucleriTemizle(); Sahne.mermileriCiz([]); Sahne.arenaKur(10 + oyun.oyuncular.length, []);
+    Sahne.gucleriTemizle(); Sahne.mermileriCiz([]); Sahne.arenaKur(Motor.arenaR(oyun.oyuncular.length), []);
     Masa.kur(oyun.oyuncular.length); oyuncularMasaya(); kameraMasa(true);
     oyun.faz = 'bitti'; oyun.kutlayan = kaz;
     ekranGoster('sonuc');
