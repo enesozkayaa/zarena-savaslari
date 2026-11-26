@@ -638,7 +638,7 @@ const Motor = (() => {
     carpisma(p);
     const bakis = Math.atan2(B.x - p.x, B.z - p.z); p.yon = bakis; p.blk = false;
     const menzil = s.tur === 'atis' ? s.menzil * 0.9 + BOSS_R : s.menzil + BOSS_R + 0.1;
-    if (ad < menzil && p.cd <= 0 && !(s.tur === 'yakin' && bossHavada())) { p.tepkiT = (p.tepkiT ?? p.tepki) - dt; if (p.tepkiT <= 0) { p.tepkiT = p.tepki; saldiri(p, bakis); } }
+    if (ad < menzil && p.cd <= 0 && !(s.tur === 'yakin' && bossHavada())) { p.tepkiT = (p.tepkiT ?? p.tepki) - dt; if (p.tepkiT <= 0) { p.tepkiT = p.tepki; saldiri(p, bakis, s.tur === 'atis' ? Math.atan2((B.y || 0) + 1.7 - MERMI_Y, Math.max(1, ad - BOSS_R * 0.5)) : 0); } }
   }
 
   // =============== DÜELLO TURNUVASI ===============
@@ -699,7 +699,7 @@ const Motor = (() => {
     else { const a = p.no / M.oyuncular.length * Math.PI * 2; sx = Math.sin(a) * (A.R - 0.4); sz = Math.cos(a) * (A.R - 0.4); }
     const r = Math.hypot(tx, tz), sinir = A.R - 0.4; if (r > sinir) { tx *= sinir / r; tz *= sinir / r; }
     const dx = tx - sx, dz = tz - sz, d = Math.hypot(dx, dz) || 1;
-    A.mermiler.push({ id: ++A.mermiNo, sahip: p.no, x: sx, z: sz, vx: dx / d * 14, vz: dz / d * 14, omur: d / 14 + 0.3, s: SEYIRCI_DOMATES, mana: false, tur: 'domates' });
+    A.mermiler.push({ id: ++A.mermiNo, sahip: p.no, x: sx, z: sz, y: 1.15, vy: 0, vx: dx / d * 14, vz: dz / d * 14, omur: d / 14 + 0.3, s: SEYIRCI_DOMATES, mana: false, tur: 'domates' });
     A.olaylar.push(['sdom', p.no]);
   }
 
@@ -733,14 +733,16 @@ const Motor = (() => {
   }
   const aci = (a, b) => { let d = (a - b) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return Math.abs(d); };
 
-  function saldiri(p, yon) {
+  const MERMI_Y = 1.3;   // mermi omuz hizasından çıkar
+  function saldiri(p, yon, egim = 0) {
     if (p.olu || p.cd > (p.bot ? 0 : 0.12) || M.faz !== 'savas' || (M.arena.duello && M.arena.duello.geri > 0)) return;
     const s = p.st.silah, A = M.arena;
     p.yon = yon; p.cd = s.bekleme; p.sonSaldiri = A.t; p.blk = false;
     A.olaylar.push(['sv', p.no]);
     if (s.tur === 'atis') {
       const dx = Math.sin(yon), dz = Math.cos(yon);
-      A.mermiler.push({ id: ++A.mermiNo, sahip: p.no, x: p.x + dx * 0.6, z: p.z + dz * 0.6, vx: dx * s.mhiz, vz: dz * s.mhiz, omur: s.menzil / s.mhiz, s, mana: p.manaT > 0, tur: s.mermi });
+      const e = Math.max(-0.5, Math.min(1.2, egim || 0)), ce = Math.cos(e);
+      A.mermiler.push({ id: ++A.mermiNo, sahip: p.no, x: p.x + dx * 0.6, z: p.z + dz * 0.6, y: MERMI_Y, vx: dx * s.mhiz * ce, vz: dz * s.mhiz * ce, vy: Math.sin(e) * s.mhiz, omur: s.menzil / s.mhiz, s, mana: p.manaT > 0, tur: s.mermi });
       return;
     }
     M.oyuncular.forEach(q => {
@@ -917,12 +919,13 @@ const Motor = (() => {
       m.omur -= dt;
       const adimSay = 3;
       for (let k = 0; k < adimSay; k++) {
-        m.x += m.vx * dt / adimSay; m.z += m.vz * dt / adimSay;
-        if (A.sutunlar.some(c => Math.hypot(c.x - m.x, c.z - m.z) < c.r)) { A.olaylar.push(['mp', m.x, m.z, m.tur]); if (m.s.ozel === 'patla') patla(m, null); return false; }
-        if (A.boss && !A.boss.olu && Math.hypot(A.boss.x - m.x, A.boss.z - m.z) < BOSS_R) {
+        m.x += m.vx * dt / adimSay; m.z += m.vz * dt / adimSay; m.y = (m.y ?? 1.15) + (m.vy || 0) * dt / adimSay;
+        if (m.y < 0.05) { A.olaylar.push(['mp', m.x, m.z, m.tur]); if (m.s.ozel === 'patla') patla(m, null); return false; }   // yere çarptı
+        if (m.y < 4.4 && A.sutunlar.some(c => Math.hypot(c.x - m.x, c.z - m.z) < c.r)) { A.olaylar.push(['mp', m.x, m.z, m.tur]); if (m.s.ozel === 'patla') patla(m, null); return false; }
+        if (A.boss && !A.boss.olu && Math.hypot(A.boss.x - m.x, A.boss.z - m.z) < BOSS_R && Math.abs(m.y - ((A.boss.y || 0) + 1.7)) < 2.0) {
           bossHasarAl(M.oyuncular[m.sahip], m.s, m.mana); A.olaylar.push(['mp', m.x, m.z, m.tur]); if (m.s.ozel === 'patla') patla(m, null); return false;
         }
-        const q = M.oyuncular.find(o => !o.olu && o.no !== m.sahip && !dost(M.oyuncular[m.sahip], o) && Math.hypot(o.x - m.x, o.z - m.z) < OYUNCU_R + 0.2);
+        const q = M.oyuncular.find(o => !o.olu && o.no !== m.sahip && !dost(M.oyuncular[m.sahip], o) && Math.hypot(o.x - m.x, o.z - m.z) < OYUNCU_R + 0.2 && m.y > -0.1 && m.y < 2.3);
         if (q) {
           const sahip = M.oyuncular[m.sahip];
           const yon = Math.atan2(m.vx, m.vz);
@@ -1027,7 +1030,7 @@ const Motor = (() => {
     M.tick % 1 === 0 && yolla({
       tip: 'd', f: M.faz, s: +(M.faz === 'geri' ? M.sayac : A.t).toFixed(2), zr: +A.zr.toFixed(2),
       p: M.oyuncular.map(o => [o.no, +o.x.toFixed(2), +o.z.toFixed(2), +o.yon.toFixed(2), Math.ceil(o.can), (o.blk ? 1 : 0) | (o.manaT > 0 ? 2 : 0) | (o.hizT > 0 ? 4 : 0) | (o.korumaT > 0 ? 8 : 0) | (o.olu ? 16 : 0) | (o.yavasT > 0 ? 32 : 0) | (o.trib ? 64 : 0)]),
-      m: A.mermiler.map(m => [m.id, +m.x.toFixed(2), +m.z.toFixed(2), m.tur, +Math.atan2(m.vx, m.vz).toFixed(2)]),
+      m: A.mermiler.map(m => [m.id, +m.x.toFixed(2), +m.z.toFixed(2), m.tur, +Math.atan2(m.vx, m.vz).toFixed(2), +(m.y ?? 1.15).toFixed(2), +Math.atan2(m.vy || 0, Math.hypot(m.vx, m.vz)).toFixed(2)]),
       g: A.gucDegisti ? A.guclar.map(g => [g.id, +g.x.toFixed(2), +g.z.toFixed(2), g.tur]) : undefined,
       y: A.yerDegisti ? A.yerde.map(y => [y.id, +y.x.toFixed(2), +y.z.toFixed(2), y.esya]) : undefined,
       sd: A.sandikDegisti ? (A.sandik ? [A.sandik.id, +A.sandik.x.toFixed(2), +A.sandik.z.toFixed(2)] : 0) : undefined,
@@ -1107,7 +1110,7 @@ const Motor = (() => {
       p.yon = sayi(m.y); p.blk = !!m.b && M.faz === 'savas';
       return;
     }
-    if (m.tip === 'vur') { saldiri(p, sayi(m.y)); return; }
+    if (m.tip === 'vur') { saldiri(p, sayi(m.y), sayi(m.e)); return; }
     if (m.tip === 'al') { if (M.faz === 'savas' && !(p.alT > 0)) { const y = enYakinYerde(p, TAKAS_MESAFE); if (y) yerdenAl(p, y); } return; }
   }
   // Oyuncu ayrıldı: yerine bot oynar

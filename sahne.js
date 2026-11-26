@@ -350,11 +350,12 @@ const Sahne = (() => {
   }
   function mermileriCiz(liste) {
     const var_ = new Set();
-    liste.forEach(([id, x, z, tur, yon]) => {
+    liste.forEach(([id, x, z, tur, yon, y = 1.15, egim = 0]) => {
       var_.add(id);
       let g = mermiMap.get(id);
-      if (!g) { g = mermiYap(tur); g.position.set(x, 1.15, z); scene.add(g); mermiMap.set(id, g); g.userData.tur = tur; }
-      g.userData.hx = x; g.userData.hz = z; g.rotation.y = yon;
+      if (!g) { g = mermiYap(tur); g.position.set(x, y, z); g.rotation.order = 'YXZ'; scene.add(g); mermiMap.set(id, g); g.userData.tur = tur; }
+      g.userData.hx = x; g.userData.hz = z; g.userData.hy = y; g.rotation.y = yon;
+      if (tur === 'ok') g.rotation.x = -egim;
     });
     mermiMap.forEach((g, id) => { if (!var_.has(id)) { at(g); mermiMap.delete(id); } });
   }
@@ -382,7 +383,7 @@ const Sahne = (() => {
     }
     (arenaGrup?.userData.alevler || []).forEach((a, i) => { a.scale.set(1 + Math.sin(simdi / 90 + i) * 0.15, 1.6 + Math.sin(simdi / 70 + i * 2) * 0.3, 1); });
     guclerMap.forEach(g => { g.userData.faz += dt * 3; g.userData.s.position.y = 0.9 + Math.sin(g.userData.faz) * 0.15; });
-    mermiMap.forEach(g => { const u = g.userData; if (u.hx === undefined) return; g.position.x += (u.hx - g.position.x) * Math.min(1, dt * 18); g.position.z += (u.hz - g.position.z) * Math.min(1, dt * 18); if (u.tur !== 'ok') g.rotation.x += dt * 10; });
+    mermiMap.forEach(g => { const u = g.userData; if (u.hx === undefined) return; g.position.x += (u.hx - g.position.x) * Math.min(1, dt * 18); g.position.z += (u.hz - g.position.z) * Math.min(1, dt * 18); if (u.hy !== undefined) g.position.y += (u.hy - g.position.y) * Math.min(1, dt * 18); if (u.tur !== 'ok') g.rotation.x += dt * 10; });
     // seyirciler zıplar
     const sy = arenaGrup?.userData.seyirci;
     if (sy && seyirciCosku > 0) {

@@ -5,7 +5,7 @@
 // =============================================================
 
 const Oyun = (() => {
-  const SURUM = 19;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
+  const SURUM = 20;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
   const $ = id => document.getElementById(id);
   const E = Esya;
   Sahne.kur($('sahne'));
@@ -1213,7 +1213,7 @@ const Oyun = (() => {
       if (fare.oynadi) { bak(dx * 0.005, dy * 0.004); fare.x = e.clientX; fare.y = e.clientY; }
     }
   });
-  function bak(dx, dy) { oyun.yaw -= dx; oyun.pitch = Math.max(-0.75, Math.min(0.55, oyun.pitch - dy)); }
+  function bak(dx, dy) { oyun.yaw -= dx; oyun.pitch = Math.max(-0.75, Math.min(0.9, oyun.pitch - dy)); }
   kanvas.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('pointerlockchange', ipucuCiz);
   function ipucuCiz() {
@@ -1292,7 +1292,16 @@ const Oyun = (() => {
     if (savas && vurIstek && !blk && ben.cd <= 0) {
       ben.cd = s.bekleme; ben.yon = oyun.yaw;
       Insan.saldir(v.h);
-      eve({ tip: 'vur', y: +oyun.yaw.toFixed(3) });
+      // Uzaktan silah: nişangâhın gösterdiği yere (yukarı / aşağı) atar. Kamera omuzdan 15 m ileriye bakar.
+      let egim = 0;
+      if (s.tur === 'atis') {
+        const cp = Math.cos(oyun.pitch), hedefY = 1.45 + Math.sin(oyun.pitch) * 15;
+        egim = Math.atan2(hedefY - 1.3, 15 * cp);
+        if (egim < 0.06 && egim > -0.15) egim = 0;   // normal bakışta düz gider
+        const B = A.boss;   // telefonda: havadaki ejderhaya kendiliğinden nişan alır
+        if (dokun && B && B.durum !== 5 && (B.y || 0) > 1.2) { const d = Math.hypot(B.x - ben.x, B.z - ben.z); egim = Math.atan2((B.y || 0) + 1.7 - 1.3, Math.max(1, d - 1)); }
+      }
+      eve({ tip: 'vur', y: +oyun.yaw.toFixed(3), e: +egim.toFixed(3) });
     }
     tekVur = false;
     v.x = ben.x; v.z = ben.z; v.yon = ben.yon; v.blkYerel = blk;
