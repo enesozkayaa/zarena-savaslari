@@ -5,7 +5,7 @@
 // =============================================================
 
 const Oyun = (() => {
-  const SURUM = 18;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
+  const SURUM = 19;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
   const $ = id => document.getElementById(id);
   const E = Esya;
   Sahne.kur($('sahne'));
@@ -473,7 +473,7 @@ const Oyun = (() => {
     if (!kutu.classList.contains('gizli')) return;
     const alici = d.sira[(d.sira.indexOf(bn) + 1) % d.sira.length], k = d.kusam[bn] || {}, kor = korMu();
     const ids = E.YUVALAR.map(y => k[y]).filter(Boolean);
-    kutu.innerHTML = `<div class="tkBaslik">🔄 TAKAS</div><div class="tkAlt">Bir eşyanı seç → <b style="color:${renkCss(alici)}">${kacis(oyuncu(alici).ad)}</b> oyuncusuna gidecek. Seçmezsen en kötüsü gider.</div>
+    kutu.innerHTML = `<div class="tkBaslik">🔄 TAKAS</div><div class="tkAlt">Bir eşyanı seç → <b style="color:${renkCss(alici)}">${kacis(oyuncu(alici).ad)}</b> oyuncusuna gidecek. Seçmezsen rastgele biri gider.</div>
       <div class="tkListe">${ids.length ? ids.map(id => { const x = E.al(id); return `<button data-id="${id}"><b>${kor ? '🎁' : x.emoji}</b>${kor ? '' : kacis(x.ad)}<i>${yildizYaz(x.p)}</i></button>`; }).join('') : '<p>Verecek eşyan yok.</p>'}</div>`;
     kutu.querySelectorAll('button[data-id]').forEach(b => b.onclick = () => { oyun.takasVerdim = `${d.draftNo}`; eve({ tip: 'takasVer', id: b.dataset.id }); kutu.classList.add('gizli'); banner('🔄 Verildi', 'Diğerleri bekleniyor…'); });
     kutu.classList.remove('gizli');
@@ -780,6 +780,7 @@ const Oyun = (() => {
     $('akis').innerHTML = '';
     puanTabloCiz(); ipucuCiz();
     buyukYazi('HAZIR OL!', ben ? `${ben.st.silah.emoji} ${ben.st.silah.ad} · ❤️ ${ben.st.canMax}${(ben.st.setler || []).map(x => ' · ' + x.emoji + ' ' + x.ad + ' seti').join('')}` : '', 1200);
+    Alev.temizle();
     ekstraKur(m.tuzak, m.R);
     Sahne.gece(!!m.gece); geceIsiklari(!!m.gece);
     ejderhaTemizle(); if (m.boss) { oyun.ejderha = Ejderha.yap(); Sahne.scene.add(oyun.ejderha); }
@@ -826,19 +827,19 @@ const Oyun = (() => {
     $('izleYazi').classList.remove('gizli');
   }
   // ---------- 🐉 Ejderha ----------
-  function ejderhaTemizle() { if (oyun?.ejderha) { Sahne.at(oyun.ejderha); oyun.ejderha = null; } $('bossBar').classList.add('gizli'); }
+  function ejderhaTemizle() { if (oyun?.ejderha) { Sahne.at(oyun.ejderha); oyun.ejderha = null; } $('bossBar').classList.add('gizli'); Alev.temizle(); }
   function ejderhaAnim(dt) {
     const g = oyun.ejderha, B = oyun.arena?.boss; if (!g || !B) return;
     const ox = B.x, oz = B.z, k = Math.min(1, dt * 8);
     B.x += (B.hx - B.x) * k; B.z += (B.hz - B.z) * k;
     let f = B.hyon - B.yon; f = Math.atan2(Math.sin(f), Math.cos(f)); B.yon += f * k;
     const hiz = Math.min(1, Math.hypot(B.x - ox, B.z - oz) / dt / 2.3);
+    B.y = (B.y || 0) + ((B.hy || 0) - (B.y || 0)) * Math.min(1, dt * 10);
     g.position.x = B.x; g.position.z = B.z; g.rotation.y = B.yon;
-    Ejderha.guncelle(g, B.durum, hiz, dt, B.kacti);
-    if (B.durum === 2) {   // alev parçacıkları
-      B.iz = (B.iz || 0) + dt;
-      if (B.iz > 0.05) { B.iz = 0; const a = Ejderha.agiz(g); for (let i = 0; i < 2; i++) { const t = 1 + Math.random() * 9, s = (Math.random() - 0.5) * 0.6; Sahne.partikul(a.x + Math.sin(a.yon + s) * t, 1.2 + Math.random(), a.z + Math.cos(a.yon + s) * t, Math.random() < 0.5 ? 0xff7a1a : 0xffd040, 2, 1.5, 0.5); } }
-    }
+    Ejderha.guncelle(g, B.durum, hiz, dt, B.kacti, B.y);
+    if (B.durum === 2) Alev.nefes(Ejderha.agiz(g), dokun ? 3 : 6);                 // ağızdan gerçek alev
+    else if (B.durum === 1 && Math.random() < 0.6) { const a = Ejderha.agiz(g); Alev.kor(a.x, a.y, a.z); }   // ağızda kor
+    if (B.durum === 10 && B.y > 0.5 && Math.random() < 0.3) Sahne.partikul(B.x + (Math.random() - 0.5) * 6, 0.2, B.z + (Math.random() - 0.5) * 6, 0xc8b08a, 1, 2, 0.5);   // kanat rüzgârı tozu
   }
   // ---------- 🌙 Gece: oyuncuların fenerleri ----------
   function geceIsiklari(acik) {
@@ -929,8 +930,9 @@ const Oyun = (() => {
     ekstra.ventler.forEach(o => {
       const d = A.f === 'savas' ? Motor.atesDurum(o.v, A.tz) : 0;
       o.h.material.opacity = d === 1 ? 0.35 + Math.abs(Math.sin(simdi / 90)) * 0.5 : d === 2 ? 0.9 : 0;
-      o.ates.visible = d === 2;
-      if (d === 2) { o.ates.scale.set(1 + Math.sin(simdi / 50) * 0.08, 1 + Math.sin(simdi / 70) * 0.15, 1); o.iz += dt; if (o.iz > 0.1) { o.iz = 0; Sahne.partikul(o.v.x, 0.4, o.v.z, 0xff7a1a, 2, 2.5, 0.6); } }
+      o.ates.visible = false;
+      if (d === 2) Alev.sutun(o.v.x, o.v.z, Motor.ATES_R * 0.8, dokun ? 2 : 4);          // gerçek ateş sütunu
+      else if (d === 1 && Math.random() < 0.35) Alev.kor(o.v.x + (Math.random() - 0.5), 0.2, o.v.z + (Math.random() - 0.5));
     });
     if (ekstra.sandik) { const u = ekstra.sandik.userData; u.sp.position.y = 1.4 + Math.sin(simdi / 250) * 0.1; ekstra.sandik.rotation.y += dt * 0.6; }
     ekstra.meteor.forEach(m => { m.t -= dt; m.tas.position.y = Math.max(0.4, m.t * 9); m.tas.rotation.x += dt * 4; m.h.material.opacity = 0.5 + Math.abs(Math.sin(simdi / 100)) * 0.4; });
@@ -1016,7 +1018,7 @@ const Oyun = (() => {
     if (m.g) Sahne.gucleriCiz(m.g);
     if (m.y) yerdeCiz(m.y);
     if (m.sd !== undefined) sandikCiz(m.sd);
-    if (m.bs && A.boss) { const B = A.boss; [B.hx, B.hz, B.hyon, B.can, B.canMax, B.durum, B.sure] = m.bs; }
+    if (m.bs && A.boss) { const B = A.boss; [B.hx, B.hz, B.hyon, B.can, B.canMax, B.durum, B.sure, B.hy] = m.bs; }
     if (m.du) A.du = m.du;
     if (m.mt) meteorCiz(m.mt);
     A.tz = m.f === 'savas' ? m.s : 0;
@@ -1076,6 +1078,10 @@ const Oyun = (() => {
       case 'bt': {
         if (o[1] === 1) Ses.alan();
         if (o[1] === 2) Ses.atis('ates');
+        if (o[1] === 8) { Ses.alan(); akis('🐉 Ejderha üstüne koşuyor! Kenara kaç'); }
+        if (o[1] === 10) { Ses.savur(true); akis('🐉 Ejderha havalandı! Havadayken kılıçla vurulamaz, uzaktan vur'); }
+        if (o[1] === 13) { const g = oyun.ejderha; if (g) for (let i = 0; i < 3; i++) Sahne.partikul(g.position.x, 0.3, g.position.z, 0xd8c8a8, 10, 6, 0.7); }
+        if (o[1] === 12) { const g = oyun.ejderha; Ses.vur(1.8); Ses.blok(); if (g) { Sahne.partikul(g.position.x, 0.3, g.position.z, 0xb89a6a, 30, 8, 1); if (ben && Math.hypot(ben.x - g.position.x, ben.z - g.position.z) < 9) Sahne.sars(0.35); } }
         if (o[1] === 6 || o[1] === 7) { Ses.vur(1.4); const g = oyun.ejderha; if (g && ben && Math.hypot(ben.x - g.position.x, ben.z - g.position.z) < 6) Sahne.sars(0.25); if (g) Sahne.partikul(g.position.x, 0.5, g.position.z, 0xc8a070, 16, 5); }
         break;
       }
@@ -1263,7 +1269,7 @@ const Oyun = (() => {
       ben.x += ix * dt + ben.vx * dt; ben.z += iz * dt + ben.vz * dt;
       const sur = Math.exp(-6 * dt); ben.vx *= sur; ben.vz *= sur;
       A.sutunlar.forEach(c => { const dx = ben.x - c.x, dz = ben.z - c.z, d = Math.hypot(dx, dz) || 0.01, r = c.r + Motor.OYUNCU_R; if (d < r) { ben.x = c.x + dx / d * r; ben.z = c.z + dz / d * r; } });
-      { const B = A.boss; if (B && B.durum !== 5 && !B.kacti) { const dx = ben.x - B.x, dz = ben.z - B.z, d = Math.hypot(dx, dz) || 0.01, r = Motor.BOSS_R + Motor.OYUNCU_R; if (d < r) { ben.x = B.x + dx / d * r; ben.z = B.z + dz / d * r; } } }
+      { const B = A.boss; if (B && B.durum !== 5 && !B.kacti && (B.y || 0) < 1.2) { const dx = ben.x - B.x, dz = ben.z - B.z, d = Math.hypot(dx, dz) || 0.01, r = Motor.BOSS_R + Motor.OYUNCU_R; if (d < r) { ben.x = B.x + dx / d * r; ben.z = B.z + dz / d * r; } } }
       oyun.k.forEach((o, no) => { if (no === benimNo() || o.olu || o.trib) return; const dx = ben.x - o.x, dz = ben.z - o.z, d = Math.hypot(dx, dz) || 0.01, r = Motor.OYUNCU_R * 2; if (d < r) { ben.x = o.x + dx / d * r; ben.z = o.z + dz / d * r; } });
       const r = Math.hypot(ben.x, ben.z), sinir = A.R - Motor.OYUNCU_R; if (r > sinir) { ben.x *= sinir / r; ben.z *= sinir / r; }
     }
@@ -1417,6 +1423,7 @@ const Oyun = (() => {
   }
   const masaSesleri = { zarDus: () => Ses.zarDus(), zarTik: () => Ses.tik(), cik: () => Ses.cik() };
   function kare(dt, simdi = performance.now()) {
+    Alev.guncelle(dt);
     if (oyun) {
       if (oyun.faz === 'draft' || oyun.faz === 'bitti') {
         if (oyun.faz === 'draft') { sureCiz(); imlecleriCiz(dt, simdi); seciyorCiz(simdi); }
