@@ -5,7 +5,7 @@
 // =============================================================
 
 const Oyun = (() => {
-  const SURUM = 16;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
+  const SURUM = 17;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
   const $ = id => document.getElementById(id);
   const E = Esya;
   Sahne.kur($('sahne'));
@@ -536,13 +536,13 @@ const Oyun = (() => {
     requestAnimationFrame(() => { const h = $('kusamim').offsetHeight; if (h) document.documentElement.style.setProperty('--altPay', (h + 14) + 'px'); });
     const setYazi = (st.setler || []).map(x => `${x.emoji} ${x.ad} seti: ${x.yazi}`).join('\n');
     $('kusamim').innerHTML = E.YUVALAR.map(y => { const x = E.al(k[y]); return `<div class="yuvaKutu${x ? '' : ' bos'}"${x ? ` data-ipucu="${kacis(esyaIpucu(x))}"` : ''}><b>${x ? x.emoji : E.YUVA_EMOJI[y]}</b>${x ? kacis(x.ad) : E.YUVA_AD[y] + ' boş'}</div>`; }).join('')
-      + `<div class="statYazi" data-ipucu="${kacis(`<b>📊 Toplam gücün</b>\n❤️ ${st.canMax} can (donla ${E.CAN_TEMEL})\n🪨 %${Math.round(st.zirh * 100)} zırh: gelen hasarı azaltır\n💨 ${st.hiz >= 0 ? '+' : ''}${Math.round(st.hiz * 100)}% hız\n${st.silah.emoji} ${kacis(st.silah.ad)}: ${st.silah.hasar} hasar\n🛡️ Blok %${Math.round(st.blok * 100)}${st.kalkan ? '' : ' (kalkansız, kollarla)'}${setYazi ? '\n🧩 ' + setYazi : ''}`)}">${(st.setler || []).map(x => x.emoji).join('')}❤️ ${st.canMax} · 🪨 %${Math.round(st.zirh * 100)} · 💨 ${st.hiz >= 0 ? '+' : ''}${Math.round(st.hiz * 100)}% · ${st.silah.emoji} ${st.silah.hasar}</div>`;
+      + `<div class="statYazi" data-ipucu="${kacis(`<b>📊 Toplam gücün</b>\n❤️ ${st.canMax} can (donla ${Math.round(E.CAN_TEMEL * E.CAN_CARPAN)})\n🪨 %${Math.round(st.zirh * 100)} zırh: gelen hasarı azaltır\n💨 ${st.hiz >= 0 ? '+' : ''}${Math.round(st.hiz * 100)}% hız\n${st.silah.emoji} ${kacis(st.silah.ad)}: ${st.silah.hasar} hasar\n🛡️ Blok %${Math.round(st.blok * 100)}${st.kalkan ? '' : ' (kalkansız, kollarla)'}${setYazi ? '\n🧩 ' + setYazi : ''}`)}">${(st.setler || []).map(x => x.emoji).join('')}❤️ ${st.canMax} · 🪨 %${Math.round(st.zirh * 100)} · 💨 ${st.hiz >= 0 ? '+' : ''}${Math.round(st.hiz * 100)}% · ${st.silah.emoji} ${st.silah.hasar}</div>`;
   }
   function ozellikYazi(x) {
     const p = [];
     if (x.yuva === 'silah') { p.push(`💥 Hasar ${x.hasar}`); p.push(x.tur === 'atis' ? `🎯 Uzaktan ${x.menzil} m` : `📏 Yakın ${x.menzil} m`); p.push(`⏱️ ${x.bekleme} sn`); }
     if (x.yuva === 'kalkan') p.push(`🛡️ Blok %${Math.round(x.blok * 100)}${x.yansit ? ' · ↩️ mermiyi geri yollar' : ''}`);
-    if (x.can) p.push(`❤️ +${x.can} can`);
+    if (x.can) p.push(`❤️ +${Math.round(x.can * E.CAN_CARPAN)} can`);
     if (x.zirh) p.push(`🪨 %${Math.round(x.zirh * 100)} zırh`);
     if (x.hiz) p.push(`${x.hiz > 0 ? '💨 +' : '🐌 -'}${Math.round(Math.abs(x.hiz) * 100)}% hız`);
     if (x.ozel) p.push('✨ ' + x.ozelYazi);
@@ -923,9 +923,9 @@ const Oyun = (() => {
         const [, no, tur] = o, v = oyun.k.get(no);
         const AD = { mana: '🔮 Mana', hiz: '🧪 Hız iksiri', can: '❤️ Can iksiri', koruma: '🫧 Koruma balonu' };
         if (v) Sahne.partikul(v.h.position.x, 1, v.h.position.z, Sahne.GUC_RENK[tur], 16, 3);
-        if (no === bn) { Ses.guc(tur); buyukYazi(AD[tur] + '!', { mana: '8 saniye güçlü vuruş', hiz: '6 saniye hızlı koşu', can: '+40 can', koruma: '6 saniye yarım hasar' }[tur], 1100); }
+        if (no === bn) { Ses.guc(tur); buyukYazi(AD[tur] + '!', { mana: '8 saniye güçlü vuruş', hiz: '6 saniye hızlı koşu', can: '+60 can', koruma: '6 saniye yarım hasar' }[tur], 1100); }
         else akis(`${AD[tur]}: ${kacis(oyuncu(no).ad)} aldı`);
-        if (tur === 'can' && v) Sahne.sayiGoster(v.h.position.x, 2.1, v.h.position.z, '+40', '#7aee5a', 0.6);
+        if (tur === 'can' && v) Sahne.sayiGoster(v.h.position.x, 2.1, v.h.position.z, '+60', '#7aee5a', 0.6);
         break;
       }
       case 'iyi': { const v = oyun.k.get(o[1]); if (v) Sahne.sayiGoster(v.h.position.x, 2.1, v.h.position.z, '+' + o[2], '#7aee5a', 0.5); break; }

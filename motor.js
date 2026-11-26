@@ -253,7 +253,11 @@ const Motor = (() => {
       tuzak: M.ayar.oz.tuzak ? tuzakHazirla(R, sutunlar, n) : null, sandik: null, sandikNo: 0, sandikSayac: 12, sandikDegisti: false,
       oy: null, oySayac: 12, meteorlar: [], meteorNo: 0, meteorDegisti: false };
     M.oyuncular.forEach((o, i) => {
-      const a = (i / n) * Math.PI * 2;
+      let a = (i / n) * Math.PI * 2;
+      if (takimli()) {   // takım arkadaşları yan yana, iki takım karşılıklı
+        const uyeler = M.oyuncular.filter(x => x.takim === o.takim), k = uyeler.indexOf(o);
+        a = o.takim * Math.PI + (k - (uyeler.length - 1) / 2) * 0.26;
+      }
       const st = E.statlar(o.kusam);
       Object.assign(o, {
         st, x: Math.sin(a) * R * 0.78, z: Math.cos(a) * R * 0.78, yon: a + Math.PI, can: st.canMax, olu: false, cd: 0, blk: false, blkT: 0,
@@ -427,7 +431,7 @@ const Motor = (() => {
   }
   // Hayalet pelerini: canı azalınca bir kez hızlanır
   function kacisKontrol(q) {
-    if (q.olu || q.can <= 0 || q.can >= 20 || q.kacisOldu) return;
+    if (q.olu || q.can <= 0 || q.can >= 30 || q.kacisOldu) return;
     if (E.al(q.kusam.govde)?.ozel !== 'kacis') return;
     q.kacisOldu = true; q.hizT = Math.max(q.hizT, 3);
     M.arena.olaylar.push(['ozel', q.no, 'kacis']);
@@ -507,7 +511,7 @@ const Motor = (() => {
   function olum(q) {
     if (q.olu) return;
     const A = M.arena;
-    if (!q.dirildi && E.al(q.kusam.kafa)?.ozel === 'dirilis') { q.dirildi = true; q.can = 30; A.olaylar.push(['ozel', q.no, 'dirilis']); return; }   // 🔥 anka tüyü
+    if (!q.dirildi && E.al(q.kusam.kafa)?.ozel === 'dirilis') { q.dirildi = true; q.can = 45; A.olaylar.push(['ozel', q.no, 'dirilis']); return; }   // 🔥 anka tüyü
     q.olu = true; q.can = 0; q.blk = false;
     let katil = -1;
     if (q.sonVuran >= 0 && A.t - q.sonVuranT < 10 && !dost(M.oyuncular[q.sonVuran], q)) { katil = q.sonVuran; const k = M.oyuncular[katil]; k.oldurme++; puanVer(k, 1); }
@@ -608,7 +612,7 @@ const Motor = (() => {
     A.guclar = A.guclar.filter(g => {
       const p = M.oyuncular.find(o => !o.olu && Math.hypot(o.x - g.x, o.z - g.z) < 1.0);
       if (!p) return true;
-      if (g.tur === 'can') p.can = Math.min(p.st.canMax, p.can + 40);
+      if (g.tur === 'can') p.can = Math.min(p.st.canMax, p.can + 60);
       else p[g.tur + 'T'] = GUC_SURE[g.tur];
       A.olaylar.push(['al', p.no, g.tur]); A.gucDegisti = true;
       return false;
