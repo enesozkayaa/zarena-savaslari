@@ -27,7 +27,7 @@ const Motor = (() => {
   const ozDuzelt = oz => ({
     ...Object.fromEntries(OZ_ADLAR.map(k => [k, !!(oz && oz[k])])),
     gece: [0, 1, 2].includes(+oz?.gece) ? +oz.gece : 0,                 // 0 hiç, 1 bazen, 2 hep
-    boss: [0, 2, 3, 4, 5].includes(+oz?.boss) ? +oz.boss : 0,           // kaç arenada bir ejderha (0 = yok)
+    boss: 0,                                                             // ejderha modu kaldırıldı
     bossSilah: oz?.bossSilah === 'sec' ? 'sec' : 'zar',                  // boss turunda silah: zardan geleni mi, herkes seçer mi
   });
   const kapaliEtkin = () => M.ayar.oz.ozel ? M.ayar.kapali : [...M.ayar.kapali, ...E.OZEL_IDLER];

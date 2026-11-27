@@ -5,7 +5,7 @@
 // =============================================================
 
 const Oyun = (() => {
-  const SURUM = 20;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
+  const SURUM = 21;   // sw.js ONBELLEK numarasıyla aynı tut; oyuncular farklı sürümdeyse uyarı çıkar
   const $ = id => document.getElementById(id);
   const E = Esya;
   Sahne.kur($('sahne'));
@@ -26,7 +26,7 @@ const Oyun = (() => {
     ['sandik', '🎁 Ödül sandığı', 'arenaya efsane silah / kalkan düşer'], ['seyirci', '👥 Seyirci oyu', 'ölenler oylayıp arenayı karıştırır'], ['takim', '🤝 Takım modu', '🔴 kırmızı - 🔵 mavi, takım arkadaşına vurulmaz'], ['joker', '🃏 Zar jokeri', 'ilk zarda 6 atan bir turda 2 eşya alır'],
     ['kor', '🎰 Kör seçim', 'masada sadece yıldızlar görünür, ne aldığın arenada çıkar'], ['takas', '🔄 Takas turu', 'seçimden sonra zar: herkes bir eşyasını bir alttakine verir'],
     ['duello', '⚔️ Düello turnuvası', 'arenada ikişer ikişer dövüşülür, diğerleri tribünden izler'], ['duelloKaris', '🍅 Düelloda seyirci karışabilir', 'tribündekiler düellocuların üstüne domates atar']];
-  const ozVarsayilan = () => ({ tuzak: true, ozel: true, set: true, sandik: true, seyirci: true, takim: false, joker: true, kor: false, takas: true, duello: false, duelloKaris: true, gece: 1, boss: 3, bossSilah: 'sec' });
+  const ozVarsayilan = () => ({ tuzak: true, ozel: true, set: true, sandik: true, seyirci: true, takim: false, joker: true, kor: false, takas: true, duello: false, duelloKaris: true, gece: 1 });
   let lobi = { botlar: [], ayar: { hedef: 5, guc: gucVarsayilan(), secimSure: 10, zarSure: 10, kararSure: 10, turSay: 5, kapali: [], oz: ozVarsayilan() } };
   try { const o = JSON.parse(localStorage.getItem('zs.oz') || 'null'); if (o && typeof o === 'object') lobi.ayar.oz = { ...ozVarsayilan(), ...o }; } catch (e) { }
   const TAKIM = ['🔴', '🔵'], TAKIM_AD = ['Kırmızı', 'Mavi'];
@@ -134,7 +134,7 @@ const Oyun = (() => {
     document.querySelectorAll('#gucler input').forEach(c => { c.checked = !!lobi.ayar.guc[c.dataset.guc]; c.disabled = !yonetici(); });
     document.querySelectorAll('#ozListe input').forEach(c => { c.checked = !!lobi.ayar.oz?.[c.dataset.oz]; c.disabled = !yonetici(); });
     $('ozHepsiBtn').parentElement.classList.toggle('gizli', !yonetici());
-    [['ayGece', 'gece'], ['ayBoss', 'boss'], ['ayBossSilah', 'bossSilah']].forEach(([el, k]) => { $(el).value = String(lobi.ayar.oz?.[k] ?? ozVarsayilan()[k]); $(el).disabled = !yonetici(); });
+    [['ayGece', 'gece']].forEach(([el, k]) => { $(el).value = String(lobi.ayar.oz?.[k] ?? ozVarsayilan()[k]); $(el).disabled = !yonetici(); });
     $('hepsiBtn').classList.toggle('gizli', !yonetici());
     $('botSatir').classList.toggle('gizli', !yonetici());
     $('botEkleBtn').disabled = L.length >= 10; $('botCikarBtn').disabled = !lobi.botlar.length;
@@ -160,7 +160,7 @@ const Oyun = (() => {
     if (!yonetici()) return;
     lobi.ayar.oz = { ...lobi.ayar.oz, [c.dataset.oz]: c.checked }; ozKaydet(); lobiYay(); lobiCiz();
   }));
-  [['ayGece', 'gece', true], ['ayBoss', 'boss', true], ['ayBossSilah', 'bossSilah', false]].forEach(([el, k, sayiMi]) => $(el).addEventListener('change', () => {
+  [['ayGece', 'gece', true]].forEach(([el, k, sayiMi]) => $(el).addEventListener('change', () => {
     if (!yonetici()) return;
     lobi.ayar.oz = { ...lobi.ayar.oz, [k]: sayiMi ? +$(el).value : $(el).value }; ozKaydet(); lobiYay(); lobiCiz();
   }));
